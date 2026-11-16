@@ -874,7 +874,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   currentVeg: {fileID: 1420372711}
   redLine: {fileID: 32502617}
-  vegArea: {fileID: 827770071}
+  boardArea: {fileID: 1592195039}
   feedbackPanel: {fileID: 915403492}
   feedbackText: {fileID: 143504105}
   completePanel: {fileID: 1572714131}
@@ -883,11 +883,16 @@ MonoBehaviour:
   moveRange: 260
   moveSpeed: 180
   greatRange: 40
-  sliceCountPerVeg: 3
   slicePrefab: {fileID: 3240594174853119962, guid: 77bf24894826d354eb83051af2f651f7,
     type: 3}
+  sliceOffsetBase: {x: 0, y: 0}
+  sliceOffsetRandom: {x: 30, y: 15}
+  sliceRotRandom: 25
+  plateSlotOffset: {x: 0, y: 0}
   completePanelCloseDelay: 3
   forceShowRedLineNow: 1
+  greatClip: {fileID: 8300000, guid: 4c467aefd5abaf840a059308f549e19c, type: 3}
+  missClip: {fileID: 8300000, guid: 6eefe777058dd854aba5c2a93477b6f7, type: 3}
 --- !u!1 &683160329
 GameObject:
   m_ObjectHideFlags: 0
@@ -1195,34 +1200,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f2e151aa52a7fff429421e2ba1e847ea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  btn: {fileID: 0}
-  boardTarget: {fileID: 827770071}
-  manager: {fileID: 634613234}
-  moveDuration: 0.35
-  moveCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
+  boardCenter: {fileID: 827770071}
+  flyDuration: 0.35
+  moveToBoardParent: 1
+  remainRatioPerCut: 0.7
+  finishThreshold: 0.25
 --- !u!114 &1420372712
 MonoBehaviour:
   m_ObjectHideFlags: 0
