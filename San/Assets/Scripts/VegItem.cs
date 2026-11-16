@@ -6,7 +6,7 @@ using System.Collections;
 [RequireComponent(typeof(RectTransform))]
 public class VegItem : MonoBehaviour, IPointerClickHandler
 {
-    [Header("菜板参考（拖 VegSlot）")]
+    [Header("菜板参考")]
     public RectTransform boardCenter;
 
     [Header("飞行")]
@@ -14,10 +14,12 @@ public class VegItem : MonoBehaviour, IPointerClickHandler
     public bool moveToBoardParent = true;
 
     [Header("切割")]
-    public float remainRatioPerCut = 0.7f;
-    public float finishThreshold = 0.25f;
+    public int targetCutCount = 3;   // 本蔬菜总共要切几次（每蔬菜独立，次数可不同）
+    public float finishRatio = 0.2f; // 切完后剩余长度比例（0.2 = 还剩 20%）
 
     public bool IsOnBoard { get; private set; }
+    public bool IsCutDone { get; private set; }
+    public int CurrentCutCount { get; private set; }
     public float CurrentRatio { get; private set; } = 1f;
 
     private RectTransform rt;
@@ -27,6 +29,7 @@ public class VegItem : MonoBehaviour, IPointerClickHandler
     private CutGameManager manager;
     private Coroutine flyCoroutine;
     private Graphic vegGraphic;
+    private float fixedLeftEdgeLocal;   // 落板后锁的左边缘（本地坐标）
 
     void Awake()
     {
@@ -42,13 +45,24 @@ public class VegItem : MonoBehaviour, IPointerClickHandler
     {
         Debug.Log($"点击蔬菜：{name}，IsOnBoard={IsOnBoard}");
 
+        if (manager != null && manager.CurrentPhase == CutGameManager.Phase.Plating)
+        {
+            Debug.Log("盘子还没清空，不能切下一个蔬菜");
+            return;
+        }
+
         if (IsOnBoard)
         {
-            // 已在菜板：蔬菜可能盖住动态线挡掉点击，这里直接转发给切菜逻辑
             if (manager != null) manager.OnCutClick(eventData.position);
             return;
         }
 
+        StartFly();
+    }
+
+    // 给 CutGameManager 调用：从原位飞到菜板（自动下一个蔬菜时用）
+    public void StartFly()
+    {
         if (boardCenter == null || !boardCenter.gameObject.activeInHierarchy)
         {
             Debug.LogError("Board Center 为空或未激活");
@@ -67,7 +81,6 @@ public class VegItem : MonoBehaviour, IPointerClickHandler
         if (moveToBoardParent)
         {
             rt.SetParent(boardCenter.parent, true);
-            // 放到菜板层级内，再拖到线后面（更靠下），避免被线视觉盖住
             rt.SetAsLastSibling();
         }
 
@@ -82,38 +95,39 @@ public class VegItem : MonoBehaviour, IPointerClickHandler
         rt.position = targetWorld;
         IsOnBoard = true;
 
-        // 到菜板后：可以保留 Raycast 给切菜层处理，这里不再自己抢事件；
-        // 如果还是点到蔬菜不切，就临时关掉自身射线测试：
-        // if (vegGraphic != null) vegGraphic.raycastTarget = false;
-
         if (manager == null) manager = FindObjectOfType<CutGameManager>();
         if (manager != null) manager.SetCurrentVeg(this);
     }
 
-    public bool CutOnce()
+    // 蔬菜落板后，由 manager 调一次：记录落板位置作为单边缩的固定左边缘
+    public void LockLeftEdge()
     {
-        CurrentRatio *= remainRatioPerCut;
-        CurrentRatio = Mathf.Max(CurrentRatio, 0f);
-
-        // 单边缩（纯本地坐标，不受父节点缩放影响）：固定左边缘 anchoredPosition，只从右边缩短
-        float leftEdgeLocal = rt.anchoredPosition.x - rt.sizeDelta.x * 0.5f;
-        float newWidth = baseSize.x * CurrentRatio;
-        rt.sizeDelta = new Vector2(newWidth, baseSize.y);
-        rt.anchoredPosition = new Vector2(leftEdgeLocal + newWidth * 0.5f, rt.anchoredPosition.y);
-
-        Debug.Log($"切一刀，剩余比例：{CurrentRatio:F2}，宽：{newWidth:F1}");
-        return CurrentRatio > finishThreshold;
+        fixedLeftEdgeLocal = rt.anchoredPosition.x - rt.sizeDelta.x * 0.5f;
     }
 
-    public void CenterOnBoard()
+    // 切一刀：按切次数线性缩短（targetCutCount 次后缩到 finishRatio）
+    // 返回 true = 还没切完；false = 切完
+    public bool CutOnce()
     {
-        if (boardCenter != null)
-            rt.position = boardCenter.position;
+        CurrentCutCount++;
+        float totalShrink = 1f - finishRatio;
+        float perCut = totalShrink / Mathf.Max(1, targetCutCount);
+        CurrentRatio = Mathf.Clamp01(1f - CurrentCutCount * perCut);
+
+        float newWidth = baseSize.x * CurrentRatio;
+        rt.sizeDelta = new Vector2(newWidth, baseSize.y);
+        rt.anchoredPosition = new Vector2(fixedLeftEdgeLocal + newWidth * 0.5f, rt.anchoredPosition.y);
+
+        IsCutDone = CurrentCutCount >= targetCutCount;
+        Debug.Log($"[{name}] 切第 {CurrentCutCount}/{targetCutCount} 刀，剩余 {CurrentRatio:F2}，宽 {newWidth:F1}，切完={IsCutDone}");
+        return !IsCutDone;
     }
 
     public void ResetVeg()
     {
+        CurrentCutCount = 0;
         CurrentRatio = 1f;
+        IsCutDone = false;
         IsOnBoard = false;
         rt.sizeDelta = baseSize;
 

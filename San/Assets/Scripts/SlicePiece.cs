@@ -29,23 +29,22 @@ public class SlicePiece : MonoBehaviour, IPointerClickHandler
     {
         if (placed || manager == null || plateSlot == null) return;
 
-        // 向 manager 取盘子下一个空位，排队不重叠
         Vector2 targetLocal = manager.GetNextPlateLocalPos(rt);
 
         rt.SetParent(plateSlot, false);
 
-        // 强制中心锚点 + 本地缩放锁 1,1，保证尺寸和在菜板上一模一样（不随父节点缩放）
         rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
         rt.pivot = new Vector2(0.5f, 0.5f);
         rt.localScale = Vector3.one;
         rt.anchoredPosition = targetLocal;
-        rt.localRotation = Quaternion.identity;  // 盘子上规整
+        rt.localRotation = Quaternion.identity;
 
-        // 关闭射线，防止再次点；也避免盖住盘子上的其他碎片
         Graphic g = GetComponent<Graphic>();
         if (g != null) g.raycastTarget = false;
 
         placed = true;
-        Debug.Log("碎片归位盘子");
+
+        // 通知 manager：本碎片已入盘（用于判断是否全部入盘、是否该清盘推进）
+        manager.NotifyPiecePlaced();
     }
 }
