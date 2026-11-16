@@ -36,6 +36,11 @@ public class CutGameManager : MonoBehaviour
     public float completePanelCloseDelay = 3f;
     public bool forceShowRedLineNow = true;
 
+    [Header("流程跳转")]
+    public GameObject cutCanvas;                  // 切菜所在的 Canvas（留空则自动取 completePanel 的父级 Canvas）
+    public GameObject calibrationCanvas;          // 校准 Canvas（切菜结束后自动打开）
+    public PotCalibrationGame calibrationGame;    // 留空则在 calibrationCanvas 内自动查找
+
     [Header("音效")]
     public AudioClip greatClip;
     public AudioClip missClip;
@@ -336,15 +341,43 @@ public class CutGameManager : MonoBehaviour
 
     void AutoCloseCompletePanel()
     {
-        if (completePanel != null)
-        {
-            // 关 panel 自身
-            completePanel.SetActive(false);
+        if (completePanel != null) completePanel.SetActive(false);
 
-            // 如果 panel 是一个 Canvas 或 Canvas 的子物体，也把 Canvas 关掉
+        // 关闭切菜 Canvas（未指定则取 completePanel 所在 Canvas）
+        GameObject cut = cutCanvas;
+        if (cut == null && completePanel != null)
+        {
             Canvas canvas = completePanel.GetComponentInParent<Canvas>();
-            if (canvas != null && canvas.gameObject != completePanel.gameObject)
-                canvas.gameObject.SetActive(false);
+            if (canvas != null) cut = canvas.gameObject;
+        }
+        if (cut != null && cut != gameObject)
+            cut.SetActive(false);
+        else if (cut != null)
+            Debug.LogWarning("CutGameManager：cutCanvas 与自身是同一个物体，已跳过关闭");
+
+        // 打开校准 Canvas 并开始校准
+        if (calibrationCanvas != null)
+        {
+            calibrationCanvas.SetActive(true);
+
+            if (calibrationGame == null)
+                calibrationGame = calibrationCanvas.GetComponentInChildren<PotCalibrationGame>(true);
+
+            if (calibrationGame != null)
+            {
+                // 激活后立即刷新布局，保证校准条的边界读取正确
+                Canvas.ForceUpdateCanvases();
+                calibrationGame.BeginCalibration();
+                Debug.Log("[Game] 切菜结束，已打开校准 Canvas 并开始校准");
+            }
+            else
+            {
+                Debug.LogWarning("CutGameManager：校准 Canvas 内没找到 PotCalibrationGame");
+            }
+        }
+        else
+        {
+            Debug.Log("[Game] 切菜结束（未配置校准 Canvas）");
         }
     }
 
