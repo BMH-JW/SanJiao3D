@@ -38,18 +38,24 @@ public class CutGameManager : MonoBehaviour
     public AudioClip greatClip;
     public AudioClip missClip;
 
+    [Header("起火与校准")]
+    public GameObject fireIcon;            // 起火标志（可点击）
+    public GameObject fireAnimation;       // 火焰帧动画（挂 Animator）
+    public GameObject calibrationCanvas;    // 校准条所在 Canvas（默认 inactive）
+    public float fireIconDelay = 0.5f;     // 所有蔬菜切完后多久出现起火标志
+
     // 运行时状态
     public Phase CurrentPhase { get; private set; } = Phase.Idle;
     private VegItem currentVeg;
     private int vegIndex;                   // 当前是第几个蔬菜
-    private int expectedPieceCount;        // 本蔬菜预期产生的碎片数
+    private int expectedPieceCount;         // 本蔬菜预期产生的碎片数
     private int placedPieceCount;           // 已归位盘子的碎片数
     private int platePieceCount;            // 盘子总碎片数（跨蔬菜累加，用于排队）
 
     private int moveDir = 1;
     private bool canClick;
     private AudioSource sfxSource;
-    private Coroutine platingFlow;         // 装盘→清盘→下一个 的协程
+    private Coroutine platingFlow;          // 装盘→清盘→下一个 的协程
 
     void Awake()
     {
@@ -63,6 +69,12 @@ public class CutGameManager : MonoBehaviour
         if (redLine != null) redLine.gameObject.SetActive(forceShowRedLineNow);
         if (dynamicLine != null) dynamicLine.gameObject.SetActive(false);
 
+        // 起火相关默认隐藏
+        if (fireIcon != null) fireIcon.SetActive(false);
+        if (fireAnimation != null) fireAnimation.SetActive(false);
+        if (calibrationCanvas != null) calibrationCanvas.SetActive(false);
+
+        SetupFireIconClick();
         EnsureBoardClickCatcher();
 
         sfxSource = gameObject.GetComponent<AudioSource>();
@@ -225,7 +237,7 @@ public class CutGameManager : MonoBehaviour
         platePieceCount++;
         Debug.Log($"[Plating] 碎片入盘 {placedPieceCount}/{expectedPieceCount}");
 
-        // 本蔬菜所有碎片都入盘了 → 等 plateHoldSeconds 再清空并推进
+        // 本蔬菜所有碎片都入盘了 → 直接 vegIndex++，不清盘不等待
         if (placedPieceCount >= expectedPieceCount && platingFlow == null)
         {
             platingFlow = StartCoroutine(PlateHoldThenAdvance());
@@ -234,25 +246,73 @@ public class CutGameManager : MonoBehaviour
 
     IEnumerator PlateHoldThenAdvance()
     {
-        Debug.Log($"[Plating] 盘子停留 {plateHoldSeconds} 秒后清空...");
-        yield return new WaitForSeconds(plateHoldSeconds);
-
-        ClearPlate();
+        // 不再等待盘子停留，也不清空碎片（碎片一直留在盘子上）
+        platingFlow = null;
 
         vegIndex++;
-        platingFlow = null;
 
         if (vegIndex >= allVegs.Length)
         {
-            // 切菜阶段结束后不再弹完成界面，由校准结果统一推进完成流程
-            Debug.Log("[Game] 三个蔬菜全部切完");
+            // 所有蔬菜切完 → 0.5 秒后出现起火标志
+            Debug.Log("[Game] 三个蔬菜全部切完，等待起火...");
             CurrentPhase = Phase.Idle;
+            StartCoroutine(ShowFireIconAfterDelay());
         }
         else
         {
-            // 等玩家手动点下一个蔬菜
+            // 不等盘子，立刻可以点下一个蔬菜
             CurrentPhase = Phase.Idle;
-            Debug.Log($"[Game] 请手动点击下一个蔬菜（vegIndex={vegIndex}）");
+            Debug.Log($"[Game] 请点击下一个蔬菜（vegIndex={vegIndex}）");
+        }
+        yield break;
+    }
+
+    IEnumerator ShowFireIconAfterDelay()
+    {
+        Debug.Log($"[Fire] 等待 {fireIconDelay} 秒后显示起火标志...");
+        yield return new WaitForSeconds(fireIconDelay);
+        if (fireIcon != null) fireIcon.SetActive(true);
+        Debug.Log("[Fire] 起火标志已显示，等待玩家点击");
+    }
+
+    // ======== 起火标志点击处理 ========
+    void SetupFireIconClick()
+    {
+        if (fireIcon == null) return;
+
+        Button btn = fireIcon.GetComponent<Button>();
+        if (btn == null) btn = fireIcon.AddComponent<Button>();
+
+        // 确保有 Graphic 才能被射线检测
+        Graphic g = fireIcon.GetComponent<Graphic>();
+        if (g == null) g = fireIcon.AddComponent<Image>();
+        g.raycastTarget = true;
+
+        btn.onClick.RemoveAllListeners();
+        btn.onClick.AddListener(OnFireIconClick);
+    }
+
+    public void OnFireIconClick()
+    {
+        Debug.Log("[Fire] 起火标志被点击 → 播放火焰动画 + 显示校准条");
+
+        // 隐藏起火标志
+        if (fireIcon != null) fireIcon.SetActive(false);
+
+        // 播放火焰帧动画（Animator 默认在 GameObject SetActive(true) 后自动从状态机播放）
+        if (fireAnimation != null) fireAnimation.SetActive(true);
+
+        // 显示校准条 Canvas
+        // 注意：PotCalibrationGame 在 Canvas 首次 SetActive(true) 时会触发 Start()，
+        // 其 Start() 里已自动调用 BeginCalibration()，无需外部再调
+        if (calibrationCanvas != null)
+        {
+            calibrationCanvas.SetActive(true);
+            Debug.Log("[Fire] 校准条 Canvas 已激活，PotCalibrationGame.BeginCalibration() 将自动执行");
+        }
+        else
+        {
+            Debug.LogWarning("[Fire] calibrationCanvas 未配置，请在 Inspector 拖入校准条所在的 Canvas");
         }
     }
 

@@ -45,12 +45,6 @@ public class VegItem : MonoBehaviour, IPointerClickHandler
     {
         Debug.Log($"点击蔬菜：{name}，IsOnBoard={IsOnBoard}");
 
-        if (manager != null && manager.CurrentPhase == CutGameManager.Phase.Plating)
-        {
-            Debug.Log("盘子还没清空，不能切下一个蔬菜");
-            return;
-        }
-
         if (IsOnBoard)
         {
             if (manager != null) manager.OnCutClick(eventData.position);
