@@ -145,6 +145,12 @@ public class CutGameManager : MonoBehaviour
         return delta <= greatRange;
     }
 
+    // 是否可以点击下一个蔬菜：当前蔬菜未切完、碎片未全部入盘清空前都不可选
+    public bool CanPickNextVeg()
+    {
+        return CurrentPhase == Phase.Idle && platingFlow == null;
+    }
+
     // ======== VegItem 调用：飞到菜板后 ========
     public void SetCurrentVeg(VegItem veg)
     {

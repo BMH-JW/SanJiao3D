@@ -51,6 +51,17 @@ public class VegItem : MonoBehaviour, IPointerClickHandler
             return;
         }
 
+        // 正在飞行中，忽略重复点击
+        if (flyCoroutine != null) return;
+
+        // 上一个蔬菜还没切完或碎片还没全部入盘，不允许点下一个蔬菜
+        if (manager == null) manager = FindObjectOfType<CutGameManager>();
+        if (manager != null && !manager.CanPickNextVeg())
+        {
+            Debug.Log($"[VegItem] 上一个蔬菜的碎片还没全部处理完，暂不能选择 {name}");
+            return;
+        }
+
         StartFly();
     }
 
@@ -88,6 +99,7 @@ public class VegItem : MonoBehaviour, IPointerClickHandler
 
         rt.position = targetWorld;
         IsOnBoard = true;
+        flyCoroutine = null;
 
         if (manager == null) manager = FindObjectOfType<CutGameManager>();
         if (manager != null) manager.SetCurrentVeg(this);
@@ -119,6 +131,8 @@ public class VegItem : MonoBehaviour, IPointerClickHandler
 
     public void ResetVeg()
     {
+        if (flyCoroutine != null) StopCoroutine(flyCoroutine);
+        flyCoroutine = null;
         CurrentCutCount = 0;
         CurrentRatio = 1f;
         IsCutDone = false;
