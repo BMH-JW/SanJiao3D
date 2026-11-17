@@ -14,9 +14,13 @@ public class PotCalibrationGame : MonoBehaviour
     public Image perfectImg;
     public Image missImg;
 
+    [Header("完成界面")]
+    public GameObject completePanel;      // CompleteText 所在物体
+
     [Header("结果后关闭")]
     public GameObject canvasToClose;      // 要关闭的 Canvas（留空则自动取本物体父级 Canvas）
-    public float closeDelay = 2f;         // 弹出结果图后多久关闭
+    public float closeDelay = 2f;         // 结果图显示后多久弹出 CompleteText
+    public float completePanelCloseDelay = 2f; // CompleteText 显示后多久关闭 Canvas
 
     [Header("状态")]
     public bool isRunning = true;
@@ -46,6 +50,7 @@ public class PotCalibrationGame : MonoBehaviour
 
         if (perfectImg != null) perfectImg.gameObject.SetActive(false);
         if (missImg != null) missImg.gameObject.SetActive(false);
+        if (completePanel != null) completePanel.SetActive(false);
 
         if (pointerRt != null && barBgRt != null)
             pointerRt.anchoredPosition = new Vector2(barBgRt.anchoredPosition.x, pointerRt.anchoredPosition.y);
@@ -101,13 +106,19 @@ public class PotCalibrationGame : MonoBehaviour
             missImg.gameObject.SetActive(true);
         }
 
-        // 结果图弹出后，等 closeDelay 秒关闭 Canvas
-        StartCoroutine(CloseCanvasAfterDelay());
+        // 结果图 → CompleteText → 关闭当前 Canvas，全程不切换 Canvas
+        StartCoroutine(ShowCompleteThenCloseCanvas());
     }
 
-    IEnumerator CloseCanvasAfterDelay()
+    IEnumerator ShowCompleteThenCloseCanvas()
     {
         yield return new WaitForSecondsRealtime(closeDelay);
+
+        if (completePanel != null) completePanel.SetActive(true);
+        else Debug.LogWarning("PotCalibrationGame：未指定 CompleteText 所在物体");
+
+        yield return new WaitForSecondsRealtime(completePanelCloseDelay);
+        if (completePanel != null) completePanel.SetActive(false);
 
         GameObject target = canvasToClose;
         if (target == null)

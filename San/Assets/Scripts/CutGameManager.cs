@@ -15,7 +15,6 @@ public class CutGameManager : MonoBehaviour
     public RectTransform boardArea;
     public GameObject feedbackPanel;
     public Text feedbackText;
-    public GameObject completePanel;
     public RectTransform plateSlot;
 
     [Header("动态虚线")]
@@ -33,13 +32,7 @@ public class CutGameManager : MonoBehaviour
 
     [Header("流程控制")]
     public float plateHoldSeconds = 2f;   // 盘子停留多久后清空
-    public float completePanelCloseDelay = 3f;
     public bool forceShowRedLineNow = true;
-
-    [Header("流程跳转")]
-    public GameObject cutCanvas;                  // 切菜所在的 Canvas（留空则自动取 completePanel 的父级 Canvas）
-    public GameObject calibrationCanvas;          // 校准 Canvas（切菜结束后自动打开）
-    public PotCalibrationGame calibrationGame;    // 留空则在 calibrationCanvas 内自动查找
 
     [Header("音效")]
     public AudioClip greatClip;
@@ -65,10 +58,8 @@ public class CutGameManager : MonoBehaviour
 
         // 强制覆盖 Inspector 里可能残留的旧值（避免序列化字段覆盖代码默认）
         plateHoldSeconds = 2f;
-        completePanelCloseDelay = 3f;
 
         if (feedbackPanel != null) feedbackPanel.SetActive(false);
-        if (completePanel != null) completePanel.SetActive(false);
         if (redLine != null) redLine.gameObject.SetActive(forceShowRedLineNow);
         if (dynamicLine != null) dynamicLine.gameObject.SetActive(false);
 
@@ -253,10 +244,9 @@ public class CutGameManager : MonoBehaviour
 
         if (vegIndex >= allVegs.Length)
         {
-            // 三个都切完了 → 弹 CompletePanel（3 秒后自动关）
-            Debug.Log("[Game] 三个蔬菜全部切完，弹 CompletePanel");
+            // 切菜阶段结束后不再弹完成界面，由校准结果统一推进完成流程
+            Debug.Log("[Game] 三个蔬菜全部切完");
             CurrentPhase = Phase.Idle;
-            ShowCompletePanel();
         }
         else
         {
@@ -327,58 +317,6 @@ public class CutGameManager : MonoBehaviour
         DynamicLineClick click = boardArea.GetComponent<DynamicLineClick>();
         if (click == null) click = boardArea.gameObject.AddComponent<DynamicLineClick>();
         click.manager = this;
-    }
-
-    void ShowCompletePanel()
-    {
-        if (completePanel != null)
-        {
-            completePanel.SetActive(true);
-            CancelInvoke(nameof(AutoCloseCompletePanel));
-            Invoke(nameof(AutoCloseCompletePanel), completePanelCloseDelay);
-        }
-    }
-
-    void AutoCloseCompletePanel()
-    {
-        if (completePanel != null) completePanel.SetActive(false);
-
-        // 关闭切菜 Canvas（未指定则取 completePanel 所在 Canvas）
-        GameObject cut = cutCanvas;
-        if (cut == null && completePanel != null)
-        {
-            Canvas canvas = completePanel.GetComponentInParent<Canvas>();
-            if (canvas != null) cut = canvas.gameObject;
-        }
-        if (cut != null && cut != gameObject)
-            cut.SetActive(false);
-        else if (cut != null)
-            Debug.LogWarning("CutGameManager：cutCanvas 与自身是同一个物体，已跳过关闭");
-
-        // 打开校准 Canvas 并开始校准
-        if (calibrationCanvas != null)
-        {
-            calibrationCanvas.SetActive(true);
-
-            if (calibrationGame == null)
-                calibrationGame = calibrationCanvas.GetComponentInChildren<PotCalibrationGame>(true);
-
-            if (calibrationGame != null)
-            {
-                // 激活后立即刷新布局，保证校准条的边界读取正确
-                Canvas.ForceUpdateCanvases();
-                calibrationGame.BeginCalibration();
-                Debug.Log("[Game] 切菜结束，已打开校准 Canvas 并开始校准");
-            }
-            else
-            {
-                Debug.LogWarning("CutGameManager：校准 Canvas 内没找到 PotCalibrationGame");
-            }
-        }
-        else
-        {
-            Debug.Log("[Game] 切菜结束（未配置校准 Canvas）");
-        }
     }
 
     public void ShowFeedback(string msg)
