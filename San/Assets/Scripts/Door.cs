@@ -2,120 +2,277 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// ÃÅ½»»¥Âß¼­£º
-/// 1. Íæ¼Ò¿¿½üÃÅµÄ¡¸½Ó½ü´¥·¢Æ÷¡¹¡ú µ¯³ö¿Éµã»÷µÄ¡¸¿ªÃÅ¡¹°´Å¥£¬Í¬Ê±½âËøÊó±ê¡£
-/// 2. µã»÷°´Å¥ ¡ú ÃÅĞı×ª´ò¿ª£¬¹Ø±Õ×èµ²Åö×²Ìå£¬ÖØĞÂËø¶¨Êó±êÈÃÍæ¼Ò×ß½øÈ¥¡£
-/// 3. Íæ¼Ò´©¹ıÃÅºóµÄ¡¸½øÈë´¥·¢Æ÷¡¹¡ú Í¨Öª GameSequenceManager ¿ªÊ¼¾çÇé¡£
+/// å•ä¸ªå¯äº¤äº’ç‰©ä½“ï¼ˆé—¨ / å†°ç®± / æŸœå­ï¼‰ï¼š
+/// 1. é è¿‘ â†’ æ˜¾ç¤ºè‡ªå·±çš„æŒ‰é’®ï¼Œæ–‡å­—éšçŠ¶æ€åœ¨ã€Œå¼€å¯ / å…³é—­ã€åˆ‡æ¢ã€‚
+/// 2. ç‚¹å‡» â†’ å¼€æˆ–å…³ï¼Œå…³é—­æ—¶æ’­æ”¾éŸ³æ•ˆã€‚
+/// 3. é—¨æ‰“å¼€åç©å®¶è¿›å…¥ enterTrigger â†’ è§¦å‘è¿›é—¨å‰§æƒ…å¹¶è‡ªåŠ¨å…³é—¨ã€‚
 /// </summary>
 public class DoorInteraction : MonoBehaviour
 {
-    [Header("ÃÅÌå")]
-    [Tooltip("ÕæÕıĞı×ªµÄÃÅ°å×ÓÎïÌå£¨Pivot£©")]
+    [Header("é—¨ä½“")]
+    [Tooltip("çœŸæ­£æ—‹è½¬çš„é—¨æ¿å­ç‰©ä½“ï¼ˆPivotï¼‰")]
     public Transform doorPivot;
-    public float openAngle = -90f;     // ´ò¿ª½Ç¶È£¨¸ºÖµÏòÒ»²à¿ª£©
-    public float openSpeed = 120f;     // ¶È/Ãë
-    [Tooltip("¹ØÃÅÊ±×èµ²Íæ¼ÒÍ¨¹ıµÄÅö×²Ìå£¬¿ªÃÅºó½ûÓÃ")]
+    public float openAngle = -90f;
+    public float openSpeed = 120f;
+    [Tooltip("å…³é—¨æ—¶é˜»æŒ¡ç©å®¶é€šè¿‡çš„ç¢°æ’ä½“ï¼Œé—¨å®Œå…¨å…³é—­åæ¢å¤")]
     public Collider doorBlocker;
 
-    [Header("¿ªÃÅ°´Å¥ UI£¨WorldSpace Canvas£©")]
+    [Header("æŒ‰é’® UI")]
+    [Tooltip("è¿™æ‰‡é—¨ä¸“å±çš„æŒ‰é’®æ ¹èŠ‚ç‚¹ï¼šå¿…é¡»æ˜¯å®ƒè‡ªå·±çš„ Button")]
+    public GameObject buttonRoot;
+    [Tooltip("æŒ‰é’®æ‰€åœ¨çš„ WorldSpace Canvasï¼ˆåªç”¨äºæ£€æµ‹æ˜¯å¦è¢«å…³é—­ï¼‰")]
     public GameObject openButtonCanvas;
     public Button openDoorButton;
 
-    [Header("´¥·¢Æ÷")]
-    [Tooltip("ÃÅ¸½½üµÄ½Ó½üÇøÓò Collider£¨isTrigger=true£©")]
+    [Header("æŒ‰é’®æ–‡å­—")]
+    [Tooltip("æŒ‰é’®ä¸Šçš„æ–‡å­—ç»„ä»¶ï¼›ç•™ç©ºä¼šè‡ªåŠ¨åœ¨æŒ‰é’®å­ç‰©ä½“é‡Œæ‰¾ UI Text")]
+    public Text buttonLabel;
+    public string openButtonText = "å¼€å¯";
+    public string closeButtonText = "å…³é—­";
+
+    [Header("è§¦å‘å™¨")]
+    [Tooltip("è¿™æ‰‡é—¨è‡ªå·±çš„æ¥è¿‘åŒºåŸŸï¼ˆisTrigger=trueï¼‰")]
     public Collider proximityTrigger;
-    [Tooltip("ÃÅºó·¿¼äÄÚµÄ½øÈëÇøÓò Collider£¨isTrigger=true£©")]
+    [Range(0f, 0.5f)]
+    [Tooltip("åªè¡¥å¿è§’è‰²è„šåº•åœ¨è§¦å‘ç›’ä¸‹æ–¹çš„æƒ…å†µï¼Œå»ºè®® 0~0.2")]
+    public float proximityTolerance = 0.3f;
+    [Tooltip("é—¨åæˆ¿é—´çš„è¿›å…¥åŒºåŸŸï¼›å†°ç®± / æŸœå­è¯·ç•™ç©º")]
     public Collider enterTrigger;
 
-    [Header("ÒıÓÃ")]
+    [Header("è‡ªåŠ¨å…³é—¨")]
+    [Tooltip("ç©å®¶è¿›å…¥ Enter Trigger åè‡ªåŠ¨å…³é—¨å¹¶æ’­æ”¾éŸ³æ•ˆ")]
+    public bool autoCloseAfterEnter = true;
+
+    [Header("è¿›é—¨å‰§æƒ…")]
+    [Tooltip("ç©å®¶è¿›å…¥ Enter Trigger æ—¶æ’­æ”¾ç¬¬ä¸‰è§†è§’å‰§æƒ…ï¼›ç•™ç©ºåˆ™é€€å›è°ƒç”¨ GameSequenceManager")]
+    public DoorEntrySequence entrySequence;
+
+    [Header("éŸ³æ•ˆ")]
+    [Tooltip("å…³é—¨éŸ³æ•ˆ")]
+    public AudioClip closeSound;
+    [Tooltip("ç•™ç©ºä¼šè‡ªåŠ¨è·å–æˆ–æ·»åŠ  AudioSource")]
+    public AudioSource audioSource;
+
+    [Header("å¼•ç”¨")]
     public PlayerMover playerMover;
 
-    private bool isOpen = false;
-    private bool isOpening = false;
+    [Header("è°ƒè¯•")]
+    public bool showDebugInfo = false;
+
+    private bool isOpen = false;          // ç›®æ ‡çŠ¶æ€ï¼štrue = æ‰“å¼€
+    private bool isAnimating = false;     // æ­£åœ¨å¼€ / å…³ä¸­
     private float currentAngle = 0f;
-    private bool entered = false;
+    private float targetAngle = 0f;
+    private bool entered = false;         // å‰§æƒ…åªè§¦å‘ä¸€æ¬¡
+    private bool uiVisible = false;
+    private bool lastDebugState = false;
     private Transform player;
+    private Quaternion initialRotation;
+
+    // å½“å‰å±å¹•ä¸Šæœ‰å‡ ä¸ªæŒ‰é’®åœ¨æ˜¾ç¤ºï¼Œå…¨éƒ¨æ¶ˆå¤±åæ‰é”é¼ æ ‡
+    private static int visibleUICount = 0;
+
+    // è¿›é—¨å‰§æƒ…æ˜¯å¦æ­£åœ¨æ’­æ”¾
+    private bool IsSequencePlaying => entrySequence != null && entrySequence.IsPlaying;
+
+    void Awake()
+    {
+        if (doorPivot != null)
+            initialRotation = doorPivot.localRotation;
+
+        if (audioSource == null)
+            audioSource = GetComponent<AudioSource>();
+        if (audioSource == null && closeSound != null)
+            audioSource = gameObject.AddComponent<AudioSource>();
+    }
 
     void Start()
     {
-        if (openButtonCanvas != null) openButtonCanvas.SetActive(false);
-        if (openDoorButton != null) openDoorButton.onClick.AddListener(OpenDoor);
-
+        // 1) Inspector å¼•ç”¨ â†’ 2) Player æ ‡ç­¾ â†’ 3) å…¨åœºæ™¯æŸ¥æ‰¾
         if (playerMover == null)
-            playerMover = GameObject.FindGameObjectWithTag("Player").GetComponent<PlayerMover>();
-        player = GameObject.FindGameObjectWithTag("Player").transform;
+        {
+            GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+            if (playerObj != null)
+                playerMover = playerObj.GetComponent<PlayerMover>();
+        }
+        if (playerMover == null)
+            playerMover = FindObjectOfType<PlayerMover>();
+
+        player = playerMover != null ? playerMover.transform : null;
+
+        if (player == null)
+            Debug.LogError($"[{name}] æ²¡æ‰¾åˆ° PlayerMoverï¼šè¯·ç»™è¿™æ‰‡é—¨å¡« Player Moverï¼Œæˆ–ç»™ç©å®¶åŠ  Player æ ‡ç­¾ã€‚", this);
+        if (proximityTrigger == null)
+            Debug.LogError($"[{name}] Proximity Trigger æ²¡æœ‰èµ‹å€¼ï¼ŒæŒ‰é’®æ°¸è¿œä¸ä¼šå‡ºç°ã€‚", this);
+        if (buttonRoot == null)
+            Debug.LogWarning($"[{name}] Button Root æ²¡èµ‹å€¼ï¼šä¼šé€€å›æ§åˆ¶æ•´ä¸ª Canvasï¼Œå¯èƒ½æ˜¾ç¤ºåˆ«äººçš„æŒ‰é’®ã€‚", this);
+        if (openButtonCanvas != null && !openButtonCanvas.activeInHierarchy)
+            Debug.LogWarning($"[{name}] Open Button Canvas åœ¨åœºæ™¯é‡Œæ˜¯å…³é—­çš„ï¼ŒæŒ‰é’®ä¸ä¼šæ˜¾ç¤ºã€‚", this);
+
+        if (openDoorButton != null)
+            openDoorButton.onClick.AddListener(ToggleDoor);
+
+        CacheButtonLabel();
+        UpdateButtonText();
+
+        SetUIVisible(false, true);
     }
 
     void Update()
     {
-        // ---- ¿ªÃÅ¶¯»­ ----
-        if (isOpening)
+        // ---- å¼€å…³åŠ¨ç”» ----
+        if (isAnimating)
         {
-            currentAngle = Mathf.MoveTowards(currentAngle, openAngle, openSpeed * Time.deltaTime);
-            doorPivot.localRotation = Quaternion.Euler(0f, currentAngle, 0f);
+            currentAngle = Mathf.MoveTowards(currentAngle, targetAngle, openSpeed * Time.deltaTime);
+            if (doorPivot != null)
+                doorPivot.localRotation = initialRotation * Quaternion.Euler(0f, currentAngle, 0f);
 
-            if (Mathf.Abs(currentAngle - openAngle) < 0.01f)
+            if (Mathf.Abs(currentAngle - targetAngle) < 0.01f)
             {
-                isOpening = false;
-                isOpen = true;
-                if (doorBlocker != null) doorBlocker.enabled = false;
+                currentAngle = targetAngle;
+                isAnimating = false;
+
+                if (doorBlocker != null) doorBlocker.enabled = !isOpen;
+                if (openDoorButton != null) openDoorButton.interactable = true;
+                UpdateButtonText();
             }
         }
 
         if (player == null) return;
 
-        // ---- ½Ó½ü¼ì²â£ºÏÔÊ¾¿ªÃÅ°´Å¥ ----
-        bool inProximity = proximityTrigger != null && proximityTrigger.bounds.Contains(player.position);
+        // ---- æ¥è¿‘æ£€æµ‹ ----
+        bool inProximity = IsPlayerInProximity();
 
-        if (inProximity && !isOpen && !isOpening)
+        if (showDebugInfo && inProximity != lastDebugState)
         {
-            if (openButtonCanvas != null && !openButtonCanvas.activeSelf)
-            {
-                openButtonCanvas.SetActive(true);
-                if (playerMover != null)
-                {
-                    playerMover.SetControl(true, false);   // »¹ÄÜÒÆ¶¯£¬µ«²»ÄÜ×ªÊÓ½Ç
-                    playerMover.LockCursor(false);          // ½âËøÊó±êÈ¥µã°´Å¥
-                }
-            }
-        }
-        else
-        {
-            if (openButtonCanvas != null && openButtonCanvas.activeSelf)
-            {
-                openButtonCanvas.SetActive(false);
-                // Ö»ÓĞÔÚÃÅÃ»±»´ò¿ªÊ±²ÅÖØĞÂËø¶¨£¨´ò¿ªºóÍæ¼ÒÒª×ß½øÈ¥£©
-                if (!isOpen && !isOpening && playerMover != null)
-                {
-                    playerMover.SetControl(true, true);
-                    playerMover.LockCursor(true);
-                }
-            }
+            lastDebugState = inProximity;
+            string triggerName = proximityTrigger != null ? proximityTrigger.name : "null";
+            Debug.Log($"[{name}] inProximity={inProximity}, è§¦å‘å™¨={triggerName}, player={player.position}");
         }
 
-        // ---- ½øÈë¼ì²â£ºÍæ¼Ò´©¹ıÃÅ ----
-        if (isOpen && !entered && enterTrigger != null)
+        // å‰§æƒ…æ’­æ”¾æ—¶ä¸æ˜¾ç¤ºé—¨çš„æŒ‰é’®
+        SetUIVisible(inProximity && !IsSequencePlaying);
+
+        // æœ‰æŒ‰é’®æ—¶ä¿æŒé¼ æ ‡è§£é”
+        if (uiVisible && playerMover != null && Cursor.lockState != CursorLockMode.None)
+            playerMover.LockCursor(false);
+
+        // ---- è¿›å…¥æ£€æµ‹ï¼šå‰§æƒ… + è‡ªåŠ¨å…³é—¨ ----
+        if (isOpen && enterTrigger != null &&
+            enterTrigger.bounds.Contains(player.position))
         {
-            if (enterTrigger.bounds.Contains(player.position))
+            if (!entered)
             {
                 entered = true;
-                if (GameSequenceManager.Instance != null)
+
+                if (entrySequence != null)
+                    entrySequence.Play();
+                else if (GameSequenceManager.Instance != null)
                     GameSequenceManager.Instance.OnPlayerEnteredRoom();
             }
+
+            if (autoCloseAfterEnter)
+                CloseDoor();
         }
     }
 
-    /// <summary>°´Å¥ OnClick °ó¶¨µ½´Ë·½·¨¡£</summary>
+    private bool IsPlayerInProximity()
+    {
+        if (proximityTrigger == null) return false;
+        if (!proximityTrigger.enabled || !proximityTrigger.gameObject.activeInHierarchy) return false;
+
+        Bounds b = proximityTrigger.bounds;
+        Vector3 feet = player.position;
+
+        if (b.Contains(feet)) return true;
+
+        // è§’è‰²åŸç‚¹åœ¨è„šåº•æ—¶ï¼Œè¡¥æµ‹èƒ¸å£ä½ç½®
+        if (b.Contains(feet + Vector3.up * 1.0f)) return true;
+
+        return b.SqrDistance(feet) <= proximityTolerance * proximityTolerance;
+    }
+
+    /// <summary>æŒ‰é’® OnClick ç»‘å®šæ­¤æ–¹æ³•ï¼šæŒ‰çŠ¶æ€å¼€æˆ–å…³ã€‚</summary>
+    public void ToggleDoor()
+    {
+        if (isAnimating) return;
+        if (isOpen) CloseDoor();
+        else OpenDoor();
+    }
+
     public void OpenDoor()
     {
-        if (isOpen || isOpening) return;
-        isOpening = true;
+        if (isOpen || isAnimating) return;
 
-        if (openButtonCanvas != null) openButtonCanvas.SetActive(false);
+        isOpen = true;
+        targetAngle = openAngle;
+        isAnimating = true;
 
-        // ÖØĞÂËø¶¨Êó±ê£¬ÈÃÍæ¼ÒÄÜ×ß½øÈ¥
-        if (playerMover != null)
+        if (openDoorButton != null) openDoorButton.interactable = false;
+        UpdateButtonText();
+    }
+
+    public void CloseDoor()
+    {
+        if (!isOpen || isAnimating) return;
+
+        isOpen = false;
+        targetAngle = 0f;
+        isAnimating = true;
+
+        if (openDoorButton != null) openDoorButton.interactable = false;
+        UpdateButtonText();
+        PlayCloseSound();
+    }
+
+    private void PlayCloseSound()
+    {
+        if (closeSound == null) return;
+
+        if (audioSource == null) audioSource = GetComponent<AudioSource>();
+        if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();
+
+        audioSource.PlayOneShot(closeSound);
+    }
+
+    private void CacheButtonLabel()
+    {
+        if (buttonLabel == null && openDoorButton != null)
+            buttonLabel = openDoorButton.GetComponentInChildren<Text>(true);
+    }
+
+    private void UpdateButtonText()
+    {
+        if (buttonLabel == null) CacheButtonLabel();
+        if (buttonLabel != null)
+            buttonLabel.text = isOpen ? closeButtonText : openButtonText;
+    }
+
+    private void SetUIVisible(bool visible, bool force = false)
+    {
+        if (!force && uiVisible == visible) return;
+        bool wasVisible = uiVisible;
+        uiVisible = visible;
+
+        GameObject target = buttonRoot != null ? buttonRoot : openButtonCanvas;
+        if (target != null) target.SetActive(visible);
+
+        bool becameVisible = visible && !wasVisible;
+        bool becameHidden = !visible && wasVisible;
+
+        if (becameVisible) visibleUICount++;
+        if (becameHidden) visibleUICount = Mathf.Max(0, visibleUICount - 1);
+
+        if (playerMover == null) return;
+
+        if (becameVisible)
         {
+            playerMover.SetControl(true, true);
+            playerMover.LockCursor(false);
+        }
+        else if (becameHidden && visibleUICount == 0 && !IsSequencePlaying)
+        {
+            // å‰§æƒ…æ’­æ”¾æ—¶ä¸æŠ¢é¼ æ ‡ï¼Œå‰§æƒ…è‡ªå·±ä¼šæ§åˆ¶
             playerMover.SetControl(true, true);
             playerMover.LockCursor(true);
         }
