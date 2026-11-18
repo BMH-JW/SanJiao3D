@@ -74,7 +74,7 @@ public class DoorInteraction : MonoBehaviour
                 openButtonCanvas.SetActive(true);
                 if (playerMover != null)
                 {
-                    playerMover.SetControl(true, false);   // 还能移动，但不能转视角
+                    playerMover.SetControl(true, true);   // 还能移动，但不能转视角
                     playerMover.LockCursor(false);          // 解锁鼠标去点按钮
                 }
             }
