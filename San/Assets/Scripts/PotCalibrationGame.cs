@@ -7,7 +7,7 @@ public class PotCalibrationGame : MonoBehaviour
     [Header("校准条配置")]
     public RectTransform barBgRt;        // 进度条底板Rect
     public RectTransform pointerRt;      // 移动指针
-    public RectTransform targetZoneRt;  // 绿色合格区间
+    public RectTransform targetZoneRt;   // 绿色合格区间
     public float moveSpeed = 220f;       // 像素/秒
 
     [Header("结果图")]
@@ -22,8 +22,12 @@ public class PotCalibrationGame : MonoBehaviour
     public float closeDelay = 2f;         // 结果图显示后多久弹出 CompleteText
     public float completePanelCloseDelay = 2f; // CompleteText 显示后多久关闭 Canvas
 
-    [Header("结束后返回 3D 房间")]
-    public bool returnTo3DOnComplete = true;   // 关闭 2D 后恢复 3D 场景并切第三人称相机
+    [Header("返回 3D / 情绪奖励")]
+    [Tooltip("情绪球与碎碎念的播放器，留空自动找")]
+    public EmotionRewardFly emotionReward;
+
+    [Tooltip("校准结束是否播放情绪奖励（会自动切回 3D）")]
+    public bool triggerEmotionReward = true;
 
     [Header("状态")]
     public bool isRunning = true;
@@ -98,7 +102,9 @@ public class PotCalibrationGame : MonoBehaviour
         isRunning = false;
         float pointerWorldX = pointerRt.position.x;
 
-        if (pointerWorldX >= targetMinX && pointerWorldX <= targetMaxX)
+        bool success = pointerWorldX >= targetMinX && pointerWorldX <= targetMaxX;
+
+        if (success)
         {
             perfectImg.gameObject.SetActive(true);
             missImg.gameObject.SetActive(false);
@@ -109,11 +115,11 @@ public class PotCalibrationGame : MonoBehaviour
             missImg.gameObject.SetActive(true);
         }
 
-        // 结果图 → CompleteText → 关闭当前 Canvas，全程不切换 Canvas
-        StartCoroutine(ShowCompleteThenCloseCanvas());
+        // 结果图 → CompleteText → 关闭当前 Canvas → 回 3D 并播放情绪奖励
+        StartCoroutine(ShowCompleteThenCloseCanvas(success));
     }
 
-    IEnumerator ShowCompleteThenCloseCanvas()
+    IEnumerator ShowCompleteThenCloseCanvas(bool success)
     {
         yield return new WaitForSecondsRealtime(closeDelay);
 
@@ -122,31 +128,6 @@ public class PotCalibrationGame : MonoBehaviour
 
         yield return new WaitForSecondsRealtime(completePanelCloseDelay);
         if (completePanel != null) completePanel.SetActive(false);
-
-        // 返回 3D 房间：TaskHUD 负责恢复 3D 物体并关闭 2D Canvas
-        if (returnTo3DOnComplete)
-        {
-            // 场景里有一个被禁用的 TaskHUD 残留，FindObjectOfType 可能先拿到它，
-            // 那样 ReturnTo3D 等于没执行，玩家会停在主相机的门外画面
-            TaskHUD hud = null;
-            TaskHUD[] huds = FindObjectsOfType<TaskHUD>(true);
-            for (int i = 0; i < huds.Length; i++)
-            {
-                if (huds[i] != null && huds[i].isActiveAndEnabled)
-                {
-                    hud = huds[i];
-                    break;
-                }
-            }
-
-            if (hud != null)
-            {
-                Debug.Log("PotCalibrationGame：调用 TaskHUD.ReturnTo3D（" + hud.gameObject.name + "）", this);
-                hud.ReturnTo3D();
-                yield break;
-            }
-            Debug.LogWarning("PotCalibrationGame：场景里找不到启用的 TaskHUD，改为只关闭 2D Canvas");
-        }
 
         GameObject target = canvasToClose;
         if (target == null)
@@ -157,6 +138,14 @@ public class PotCalibrationGame : MonoBehaviour
 
         if (target != null) target.SetActive(false);
         else Debug.LogWarning("PotCalibrationGame：找不到要关闭的 Canvas，请手动指定 canvasToClose");
+
+        // 切回 3D + 碎碎念 + 情绪球
+        if (triggerEmotionReward)
+        {
+            if (emotionReward == null) emotionReward = FindObjectOfType<EmotionRewardFly>(true);
+            if (emotionReward != null) emotionReward.Play(success);
+            else Debug.LogWarning("PotCalibrationGame：场景里找不到 EmotionRewardFly，情绪奖励不会播放");
+        }
     }
 
     public void ResetGame()

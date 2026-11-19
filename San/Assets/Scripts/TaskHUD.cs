@@ -48,6 +48,9 @@ public class TaskHUD : MonoBehaviour
 
     // ---------------- 返回 3D ----------------
     [Header("返回 3D 房间")]
+    [Tooltip("【把你想切回去的那台摄像机拖到这里】返回 3D 后只会启用这台，其它相机全部关掉。留空则用玩家身上的第一人称相机")]
+    public Camera cameraOnReturn;
+
     [Tooltip("返回后是否恢复玩家的移动和转视角；关闭时保持冻结，只展示第一人称画面")]
     public bool restorePlayerControlOnReturn = true;
 
@@ -312,10 +315,13 @@ public class TaskHUD : MonoBehaviour
         Debug.Log("========== [TaskHUD] 完成 ==========");
     }
 
-    /// <summary>2D 小游戏结束后调用：恢复 3D 物体、回到第一人称、关闭 2D 面板。</summary>
+    /// <summary>2D 小游戏结束后调用：恢复 3D 物体、切回指定摄像机、关闭 2D 面板。</summary>
     public void ReturnTo3D()
     {
         Debug.Log("========== [TaskHUD] 从 2D 返回 3D ==========", this);
+
+        // 防止 2D 里残留的暂停状态把 3D 卡住
+        Time.timeScale = 1f;
 
         // 1. 恢复之前关掉的 3D 顶层物体
         if (deactivateOn2D != null)
@@ -329,7 +335,7 @@ public class TaskHUD : MonoBehaviour
             }
         }
 
-        // 2. 把玩家放回进 2D 前的位置，保持第一人称视角
+        // 2. 把玩家放回进 2D 前的位置
         PlayerMover posePlayer = FindObjectOfType<PlayerMover>();
         if (posePlayer != null && hasSavedPlayerPose)
         {
@@ -337,33 +343,48 @@ public class TaskHUD : MonoBehaviour
             Debug.Log("[TaskHUD] 玩家已回到进 2D 前的位置：" + savedPlayerPosition);
         }
 
-        // 3. 确保回到第一人称：打开玩家相机，关掉会盖住画面的其它相机（门口过场机位）
-        PlayerMover camOwner = FindObjectOfType<PlayerMover>();
-        Camera firstCam = camOwner != null && camOwner.cameraTransform != null
-            ? camOwner.cameraTransform.GetComponent<Camera>()
-            : null;
+        // 3. 切摄像机：优先用你手动拖进来的 cameraOnReturn
+        Camera targetCam = cameraOnReturn;
 
-        if (firstCam != null)
+        if (targetCam == null)
         {
-            Transform t = firstCam.transform;
+            // 没拖就退回玩家身上的第一人称相机
+            if (posePlayer != null && posePlayer.cameraTransform != null)
+                targetCam = posePlayer.cameraTransform.GetComponent<Camera>();
+
+            if (targetCam != null)
+                Debug.LogWarning("[TaskHUD] 没指定 Camera On Return，改用玩家第一人称相机：" + targetCam.name);
+            else
+                Debug.LogError("[TaskHUD] 没指定 Camera On Return，玩家身上也找不到相机，画面可能黑屏或停在旧机位", this);
+        }
+
+        // 3.1 把目标相机所在的整条父级链打开（可能被 deactivateOn2D 关掉了）
+        if (targetCam != null)
+        {
+            Transform t = targetCam.transform;
             while (t != null)
             {
-                if (!t.gameObject.activeSelf) t.gameObject.SetActive(true);
+                if (!t.gameObject.activeSelf)
+                {
+                    t.gameObject.SetActive(true);
+                    if (debugLog) Debug.Log("[TaskHUD] 打开相机父级：" + t.name);
+                }
                 t = t.parent;
             }
-            firstCam.enabled = true;
-        }
-        else
-        {
-            Debug.LogWarning("[TaskHUD] 找不到玩家身上的第一人称相机，画面可能停在门外的机位", this);
+
+            targetCam.enabled = true;
+            Debug.Log("[TaskHUD] 启用目标相机：" + targetCam.name, targetCam);
         }
 
+        // 3.2 其它相机全部关掉（含未激活的），避免多个相机叠在一起
         foreach (Camera c in FindObjectsOfType<Camera>(true))
         {
-            if (c == null || c == firstCam) continue;
-            if (firstCam != null && c.depth < firstCam.depth) continue;
-            c.enabled = false;
-            if (debugLog) Debug.Log("[TaskHUD] 关闭其它相机：" + c.name);
+            if (c == null || c == targetCam) continue;
+            if (c.enabled)
+            {
+                c.enabled = false;
+                if (debugLog) Debug.Log("[TaskHUD] 关闭其它相机：" + c.name);
+            }
         }
 
         if (debugLog)
