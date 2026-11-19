@@ -22,6 +22,9 @@ public class PotCalibrationGame : MonoBehaviour
     public float closeDelay = 2f;         // 结果图显示后多久弹出 CompleteText
     public float completePanelCloseDelay = 2f; // CompleteText 显示后多久关闭 Canvas
 
+    [Header("结束后返回 3D 房间")]
+    public bool returnTo3DOnComplete = true;   // 关闭 2D 后恢复 3D 场景并切第三人称相机
+
     [Header("状态")]
     public bool isRunning = true;
 
@@ -119,6 +122,31 @@ public class PotCalibrationGame : MonoBehaviour
 
         yield return new WaitForSecondsRealtime(completePanelCloseDelay);
         if (completePanel != null) completePanel.SetActive(false);
+
+        // 返回 3D 房间：TaskHUD 负责恢复 3D 物体并关闭 2D Canvas
+        if (returnTo3DOnComplete)
+        {
+            // 场景里有一个被禁用的 TaskHUD 残留，FindObjectOfType 可能先拿到它，
+            // 那样 ReturnTo3D 等于没执行，玩家会停在主相机的门外画面
+            TaskHUD hud = null;
+            TaskHUD[] huds = FindObjectsOfType<TaskHUD>(true);
+            for (int i = 0; i < huds.Length; i++)
+            {
+                if (huds[i] != null && huds[i].isActiveAndEnabled)
+                {
+                    hud = huds[i];
+                    break;
+                }
+            }
+
+            if (hud != null)
+            {
+                Debug.Log("PotCalibrationGame：调用 TaskHUD.ReturnTo3D（" + hud.gameObject.name + "）", this);
+                hud.ReturnTo3D();
+                yield break;
+            }
+            Debug.LogWarning("PotCalibrationGame：场景里找不到启用的 TaskHUD，改为只关闭 2D Canvas");
+        }
 
         GameObject target = canvasToClose;
         if (target == null)

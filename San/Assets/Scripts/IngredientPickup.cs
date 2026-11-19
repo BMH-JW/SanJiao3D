@@ -4,34 +4,34 @@ using UnityEngine.UI;
 
 public class IngredientPickup : MonoBehaviour
 {
-    [Header("Éí·İ")]
-    [Tooltip("Ê³²Ä ID£¬±ØĞëºÍ TaskHUD ÀïµÄ Ingredient Id ÍêÈ«Ò»ÖÂ£»Áô¿ÕÔòÓÃÎïÌåÃû×Ö")]
+    [Header("èº«ä»½")]
+    [Tooltip("é£Ÿæ IDï¼Œå¿…é¡»å’Œ TaskHUD é‡Œçš„ Ingredient Id å®Œå…¨ä¸€è‡´ï¼›ç•™ç©ºåˆ™ç”¨ç‰©ä½“åå­—")]
     public string ingredientId = "";
 
-    [Header("ÌáÊ¾ UI")]
-    [Tooltip("ÌáÊ¾ÎïÌå¡£½¨ÒéÖ¸Ïò¶ÀÁ¢µÄÌáÊ¾×ÓÎïÌå£¨Èç Canvas/PickupPrompt£©£¬²»ÒªÖ¸ÏòÕû¸öÆÁÄ» Canvas")]
+    [Header("æç¤º UI")]
+    [Tooltip("æç¤ºç‰©ä½“ã€‚å»ºè®®æŒ‡å‘ç‹¬ç«‹çš„æç¤ºå­ç‰©ä½“ï¼ˆå¦‚ Canvas/PickupPromptï¼‰ï¼Œä¸è¦æŒ‡å‘æ•´ä¸ªå±å¹• Canvas")]
     public GameObject promptRoot;
-    [Tooltip("¿ÉÑ¡£ºÌáÊ¾ÎÄ×Ö×é¼ş")]
+    [Tooltip("å¯é€‰ï¼šæç¤ºæ–‡å­—ç»„ä»¶")]
     public Text promptLabel;
-    public string promptText = "°´ E Ê°È¡";
+    public string promptText = "æŒ‰ E æ‹¾å–";
 
-    [Header("¼ì²â")]
+    [Header("æ£€æµ‹")]
     public Transform player;
     public float pickupRange = 2.0f;
     public float maxHeightDiff = 2.0f;
 
-    [Header("°´¼ü")]
+    [Header("æŒ‰é”®")]
     public KeyCode pickupKey = KeyCode.E;
 
-    [Header("Ê°È¡ºó")]
-    [Tooltip("Áô¿Õ = Òş²Ø½Å±¾ËùÔÚÎïÌå¡£Ö»ÄÜÌîÊ³²ÄÄ£ĞÍ£¬²»ÒªÌî Canvas / HUD")]
+    [Header("æ‹¾å–å")]
+    [Tooltip("ç•™ç©º = éšè—è„šæœ¬æ‰€åœ¨ç‰©ä½“ã€‚åªèƒ½å¡«é£Ÿææ¨¡å‹ï¼Œä¸è¦å¡« Canvas / HUD")]
     public GameObject objectToHide;
     public bool destroyInsteadOfHide = false;
 
-    [Header("ÌáÊ¾³¯Ïò")]
+    [Header("æç¤ºæœå‘")]
     public bool faceCamera = true;
 
-    [Header("µ÷ÊÔ")]
+    [Header("è°ƒè¯•")]
     public bool debugLog = true;
 
     private bool picked = false;
@@ -41,6 +41,7 @@ public class IngredientPickup : MonoBehaviour
 
     private static readonly List<IngredientPickup> allPickups = new List<IngredientPickup>();
     private static readonly HashSet<string> pickedIds = new HashSet<string>();
+    private static int lastPickFrame = -1;
 
     public static event System.Action<string> Picked;
 
@@ -85,9 +86,9 @@ public class IngredientPickup : MonoBehaviour
     private void Start()
     {
         if (player == null)
-            Debug.LogError("[IngredientPickup] Ã»ÕÒµ½Íæ¼Ò£¬Çë°ÑÍæ¼ÒÍÏµ½ Player ×Ö¶Î¡£", this);
+            Debug.LogError("[IngredientPickup] æ²¡æ‰¾åˆ°ç©å®¶ï¼Œè¯·æŠŠç©å®¶æ‹–åˆ° Player å­—æ®µã€‚", this);
         if (promptRoot == null)
-            Debug.LogError("[IngredientPickup] Ã»ÓĞÖ¸¶¨ Prompt Root£¬ÌáÊ¾²»»áÏÔÊ¾¡£", this);
+            Debug.LogError("[IngredientPickup] æ²¡æœ‰æŒ‡å®š Prompt Rootï¼Œæç¤ºä¸ä¼šæ˜¾ç¤ºã€‚", this);
 
         if (promptLabel != null) promptLabel.text = promptText;
         SetPromptVisible(false, true);
@@ -105,8 +106,12 @@ public class IngredientPickup : MonoBehaviour
         bool isNearest = IsInRange() && FindNearestPickup() == this;
         SetPromptVisible(isNearest);
 
-        if (isNearest && PickupKeyPressed())
+        if (isNearest && PickupKeyPressed() && lastPickFrame != Time.frameCount)
+        {
+            // ä¸€å¸§åªå…è®¸æ‹¾å–ä¸€ä¸ªï¼Œé¿å…ä¸¤ä¸ªæŒ¨ç€çš„é£Ÿæè¢«åŒä¸€æ¬¡æŒ‰é”®ä¸€èµ·æ¡èµ·
+            lastPickFrame = Time.frameCount;
             PickUp();
+        }
     }
 
     private void LateUpdate()
@@ -119,7 +124,7 @@ public class IngredientPickup : MonoBehaviour
         promptRoot.transform.rotation = cam.transform.rotation;
     }
 
-    // ---------------- Ê°È¡ ----------------
+    // ---------------- æ‹¾å– ----------------
 
     private void PickUp()
     {
@@ -135,13 +140,13 @@ public class IngredientPickup : MonoBehaviour
         GameObject target = objectToHide != null ? objectToHide : gameObject;
 
         if (debugLog)
-            Debug.Log("[IngredientPickup] Ê°È¡ " + id + "£¬¼´½«Òş²Ø£º" + GetPath(target.transform), this);
+            Debug.Log("[IngredientPickup] æ‹¾å– " + id + "ï¼Œå³å°†éšè—ï¼š" + GetPath(target.transform), this);
 
         if (destroyInsteadOfHide)
         {
             if (ContainsUI(target))
             {
-                Debug.LogError("[IngredientPickup] Ä¿±êÀïÓĞ UI£¬ÒÑÈ¡ÏûÏú»Ù£º" + GetPath(target.transform), target);
+                Debug.LogError("[IngredientPickup] ç›®æ ‡é‡Œæœ‰ UIï¼Œå·²å–æ¶ˆé”€æ¯ï¼š" + GetPath(target.transform), target);
                 HideVisualOnly(target);
             }
             else
@@ -153,8 +158,8 @@ public class IngredientPickup : MonoBehaviour
 
         if (ContainsUI(target))
         {
-            Debug.LogWarning("[IngredientPickup] Ä¿±êÀïº¬ÓĞ UI£¬¸ÄÎªÖ»Òş²ØÄ£ĞÍ£º" + GetPath(target.transform) +
-                             "¡£Çë°Ñ Object To Hide ¸Ä³ÉÊ³²ÄÄ£ĞÍ±¾Éí¡£", target);
+            Debug.LogWarning("[IngredientPickup] ç›®æ ‡é‡Œå«æœ‰ UIï¼Œæ”¹ä¸ºåªéšè—æ¨¡å‹ï¼š" + GetPath(target.transform) +
+                             "ã€‚è¯·æŠŠ Object To Hide æ”¹æˆé£Ÿææ¨¡å‹æœ¬èº«ã€‚", target);
             HideVisualOnly(target);
         }
         else
@@ -172,7 +177,7 @@ public class IngredientPickup : MonoBehaviour
         for (int i = 0; i < cs.Length; i++) cs[i].enabled = false;
     }
 
-    // ---------------- ÌáÊ¾°²È«¼ì²â ----------------
+    // ---------------- æç¤ºå®‰å…¨æ£€æµ‹ ----------------
 
     private static bool ContainsUI(GameObject go)
     {
@@ -196,34 +201,34 @@ public class IngredientPickup : MonoBehaviour
 
         promptUnsafe = true;
 
-        // ÓÅÏÈÖ»ÓÃÖ¸¶¨µÄ Prompt Label
+        // ä¼˜å…ˆåªç”¨æŒ‡å®šçš„ Prompt Label
         if (promptLabel != null)
         {
             promptTexts = new Text[] { promptLabel };
-            Debug.LogWarning("[IngredientPickup] Prompt Root ÊÇÆÁÄ» Canvas£¨" + GetPath(promptRoot.transform) +
-                             "£©£¬ÒÑ¸ÄÎªÖ»¿ª¹Ø Prompt Label£º" + GetPath(promptLabel.transform) +
-                             "¡£½¨Òé°Ñ Prompt Root Ö¸Ïò¶ÀÁ¢µÄÌáÊ¾×ÓÎïÌå¡£", this);
+            Debug.LogWarning("[IngredientPickup] Prompt Root æ˜¯å±å¹• Canvasï¼ˆ" + GetPath(promptRoot.transform) +
+                             "ï¼‰ï¼Œå·²æ”¹ä¸ºåªå¼€å…³ Prompt Labelï¼š" + GetPath(promptLabel.transform) +
+                             "ã€‚å»ºè®®æŠŠ Prompt Root æŒ‡å‘ç‹¬ç«‹çš„æç¤ºå­ç‰©ä½“ã€‚", this);
             return;
         }
 
-        // Ã»Ö¸¶¨ Label£º°´Ãû×ÖÕÒÌáÊ¾ÎÄ×Ö
+        // æ²¡æŒ‡å®š Labelï¼šæŒ‰åå­—æ‰¾æç¤ºæ–‡å­—
         Text[] all = promptRoot.GetComponentsInChildren<Text>(true);
         for (int i = 0; i < all.Length; i++)
         {
             string n = all[i].name.ToLowerInvariant();
-            if (n.Contains("prompt") || n.Contains("pickup") || n.Contains("Ê°È¡") || n.Contains("ÌáÊ¾"))
+            if (n.Contains("prompt") || n.Contains("pickup") || n.Contains("æ‹¾å–") || n.Contains("æç¤º"))
             {
                 promptTexts = new Text[] { all[i] };
-                Debug.LogWarning("[IngredientPickup] Prompt Root ÊÇÆÁÄ» Canvas£¬ÒÑ¸ÄÎªÖ»¿ª¹ØÎÄ×Ö£º" +
+                Debug.LogWarning("[IngredientPickup] Prompt Root æ˜¯å±å¹• Canvasï¼Œå·²æ”¹ä¸ºåªå¼€å…³æ–‡å­—ï¼š" +
                                  GetPath(all[i].transform), this);
                 return;
             }
         }
 
-        Debug.LogError("[IngredientPickup] Prompt Root Ö¸ÏòÆÁÄ» Canvas£¬µ«ÕÒ²»µ½ÌáÊ¾ÎÄ×Ö¡£Çë°Ñ Prompt Root Ö¸ÏòÌáÊ¾ÎÄ×ÖËùÔÚµÄ×ÓÎïÌå£¬»òÖ¸¶¨ Prompt Label¡£", this);
+        Debug.LogError("[IngredientPickup] Prompt Root æŒ‡å‘å±å¹• Canvasï¼Œä½†æ‰¾ä¸åˆ°æç¤ºæ–‡å­—ã€‚è¯·æŠŠ Prompt Root æŒ‡å‘æç¤ºæ–‡å­—æ‰€åœ¨çš„å­ç‰©ä½“ï¼Œæˆ–æŒ‡å®š Prompt Labelã€‚", this);
     }
 
-    // ---------------- ·¶Î§Óë×î½üÅĞ¶¨ ----------------
+    // ---------------- èŒƒå›´ä¸æœ€è¿‘åˆ¤å®š ----------------
 
     private bool IsInRange()
     {
@@ -269,7 +274,7 @@ public class IngredientPickup : MonoBehaviour
         return best;
     }
 
-    // ---------------- ÌáÊ¾ÏÔÊ¾ ----------------
+    // ---------------- æç¤ºæ˜¾ç¤º ----------------
 
     private void SetPromptVisible(bool visible, bool force = false)
     {
@@ -291,7 +296,7 @@ public class IngredientPickup : MonoBehaviour
         promptRoot.SetActive(visible);
     }
 
-    // ---------------- ¹¤¾ß ----------------
+    // ---------------- å·¥å…· ----------------
 
     private static string GetPath(Transform t)
     {

@@ -3,39 +3,41 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// ½øÃÅ¾çÇé£º¶³½áÍæ¼Ò + Ö»ÆôÓÃ¹Ì¶¨µÄµÚÈıÈË³ÆÏà»ú + ËéËéÄîÆøÅİ£¬
-/// ËéËéÄîÏûÊ§ºóÔÙµ¯³öÈÎÎñµ¯´°£¬µãÈ·¶¨»Ö¸´µÚÒ»ÈË³ÆºÍÒÆ¶¯¡£
-/// µÚÈıÈË³ÆÏà»úµÄ Transform ÍêÈ«²»¶¯£¬ÒÔ³¡¾°Àï°ÚºÃµÄÎª×¼¡£
+/// è¿›é—¨å‰§æƒ…ï¼šå†»ç»“ç©å®¶ + åªå¯ç”¨å›ºå®šçš„ç¬¬ä¸‰äººç§°ç›¸æœº + ç¢ç¢å¿µæ°”æ³¡ï¼Œ
+/// ç¢ç¢å¿µæ¶ˆå¤±åå†å¼¹å‡ºä»»åŠ¡å¼¹çª—ï¼Œç‚¹ç¡®å®šæ¢å¤ç¬¬ä¸€äººç§°å’Œç§»åŠ¨ã€‚
+/// ç¬¬ä¸‰äººç§°ç›¸æœºçš„ Transform å®Œå…¨ä¸åŠ¨ï¼Œä»¥åœºæ™¯é‡Œæ‘†å¥½çš„ä¸ºå‡†ã€‚
 /// </summary>
 public class DoorEntrySequence : MonoBehaviour
 {
-    [Header("Íæ¼Ò")]
-    [Tooltip("Áô¿Õ»á×Ô¶¯²éÕÒ³¡¾°ÀïµÄ PlayerMover")]
+    [Header("ç©å®¶")]
+    [Tooltip("ç•™ç©ºä¼šè‡ªåŠ¨æŸ¥æ‰¾åœºæ™¯é‡Œçš„ PlayerMover")]
     public PlayerMover playerMover;
 
-    [Header("Ïà»ú")]
-    [Tooltip("Íæ¼ÒÔ­±¾µÄµÚÒ»ÈË³ÆÖ÷Ïà»ú")]
+    [Header("ç›¸æœº")]
+    [Tooltip("ç©å®¶åŸæœ¬çš„ç¬¬ä¸€äººç§°ä¸»ç›¸æœº")]
     public Camera firstPersonCamera;
-    [Tooltip("³¡¾°Àï°ÚºÃµÄ¹Ì¶¨µÚÈıÈË³ÆÏà»ú£¨²»ÒªÌîÖ÷Ïà»ú£©")]
+    [Tooltip("åœºæ™¯é‡Œæ‘†å¥½çš„å›ºå®šç¬¬ä¸‰äººç§°ç›¸æœºï¼ˆä¸è¦å¡«ä¸»ç›¸æœºï¼‰")]
     public Camera thirdPersonCamera;
 
-    [Header("ËéËéÄîÆøÅİ£¨WorldSpace Canvas£©")]
-    [Tooltip("Õû¸öÆøÅİµÄ¸ùÎïÌå£¨Canvas »ò°üº¬±³¾°µÄ Panel£©£¬²»ÒªÖ»ÌîÎÄ×Ö")]
+    [Header("ç¢ç¢å¿µæ°”æ³¡ï¼ˆWorldSpace Canvasï¼‰")]
+    [Tooltip("æ•´ä¸ªæ°”æ³¡çš„æ ¹ç‰©ä½“ï¼ˆCanvas æˆ–åŒ…å«èƒŒæ™¯çš„ Panelï¼‰ï¼Œä¸è¦åªå¡«æ–‡å­—")]
     public GameObject thoughtBubble;
     public Text thoughtLabel;
-    [TextArea] public string thoughtText = "ÃÅ×Ô¼º¹ØÉÏÁË¡­¡­ÏÈËÄ´¦¿´¿´¡£";
+    [TextArea] public string thoughtText = "é—¨è‡ªå·±å…³ä¸Šäº†â€¦â€¦å…ˆå››å¤„çœ‹çœ‹ã€‚";
     [Min(0.1f)] public float thoughtDuration = 1.5f;
-    [Tooltip("ËéËéÄîÏûÊ§ºó£¬µÈ¶à¾ÃÔÙµ¯³öÈÎÎñµ¯´°")]
+    [Tooltip("ç¢ç¢å¿µæ¶ˆå¤±åï¼Œç­‰å¤šä¹…å†å¼¹å‡ºä»»åŠ¡å¼¹çª—")]
     public float thoughtHideDelay = 0.25f;
+    [Tooltip("å‰§æƒ…å¼€å§‹æ—¶è®©ç¬¬ä¸‰äººç§°ç›¸æœºè½¬å‘ç¢ç¢å¿µæ°”æ³¡ï¼Œé¿å…ç›¸æœºæœå‘å¢™ä½“çœ‹ä¸è§æ°”æ³¡")]
+    public bool aimAtThought = true;
 
-    [Header("ÈÎÎñµ¯´°£¨ÆÁÄ»¿Õ¼ä UI£©")]
+    [Header("ä»»åŠ¡å¼¹çª—ï¼ˆå±å¹•ç©ºé—´ UIï¼‰")]
     public GameObject taskPanel;
     public Text taskLabel;
-    [TextArea] public string taskText = "ÈÎÎñ£ºµ÷²éÕâ¸ö·¿¼ä";
+    [TextArea] public string taskText = "ä»»åŠ¡ï¼šè°ƒæŸ¥è¿™ä¸ªæˆ¿é—´";
     public Button confirmButton;
 
-    [Header("µ÷ÊÔ")]
-    [Tooltip("¿ªÆôºó»áÔÚ Console ´òÓ¡ËùÓĞÏà»úµÄ×´Ì¬")]
+    [Header("è°ƒè¯•")]
+    [Tooltip("å¼€å¯åä¼šåœ¨ Console æ‰“å°æ‰€æœ‰ç›¸æœºçš„çŠ¶æ€")]
     public bool debugLog = false;
 
     private bool playing = false;
@@ -53,10 +55,10 @@ public class DoorEntrySequence : MonoBehaviour
         if (firstPersonCamera != null && thirdPersonCamera != null &&
             firstPersonCamera == thirdPersonCamera)
         {
-            Debug.LogError("[DoorEntrySequence] µÚÒ»ÈË³ÆºÍµÚÈıÈË³ÆÍÏ³ÉÁËÍ¬Ò»¸öÏà»ú£¬ÇëÖØĞÂÖ¸¶¨£¡", this);
+            Debug.LogError("[DoorEntrySequence] ç¬¬ä¸€äººç§°å’Œç¬¬ä¸‰äººç§°æ‹–æˆäº†åŒä¸€ä¸ªç›¸æœºï¼Œè¯·é‡æ–°æŒ‡å®šï¼", this);
         }
 
-        // ¼ÇÂ¼³¡¾°ÀïËùÓĞÏà»úµÄ³õÊ¼ÆôÓÃ×´Ì¬£¬½áÊøÊ±»Ö¸´
+        // è®°å½•åœºæ™¯é‡Œæ‰€æœ‰ç›¸æœºçš„åˆå§‹å¯ç”¨çŠ¶æ€ï¼Œç»“æŸæ—¶æ¢å¤
         allCameras = FindObjectsOfType<Camera>();
         cameraEnabledCache = new bool[allCameras.Length];
         for (int i = 0; i < allCameras.Length; i++)
@@ -85,17 +87,17 @@ public class DoorEntrySequence : MonoBehaviour
     {
         playing = true;
 
-        // 1. ¶³½áÍæ¼Ò£¬½âËøÊó±ê£¨ºóÃæÒªµã¡°È·¶¨¡±£©
+        // 1. å†»ç»“ç©å®¶ï¼Œè§£é”é¼ æ ‡ï¼ˆåé¢è¦ç‚¹â€œç¡®å®šâ€ï¼‰
         if (playerMover != null)
         {
             playerMover.SetControl(false, false);
             playerMover.LockCursor(false);
         }
 
-        // 2. Ö»±£Áô¹Ì¶¨µÄµÚÈıÈË³ÆÏà»ú
+        // 2. åªä¿ç•™å›ºå®šçš„ç¬¬ä¸‰äººç§°ç›¸æœº
         if (thirdPersonCamera != null)
         {
-            // ¹Øµô³ıÄ¿±êÍâµÄËùÓĞÏà»ú£¬·ÀÖ¹Ö÷Ïà»ú¼ÌĞø¸Ç×¡»­Ãæ
+            // å…³æ‰é™¤ç›®æ ‡å¤–çš„æ‰€æœ‰ç›¸æœºï¼Œé˜²æ­¢ä¸»ç›¸æœºç»§ç»­ç›–ä½ç”»é¢
             for (int i = 0; i < allCameras.Length; i++)
             {
                 if (allCameras[i] == null || allCameras[i] == thirdPersonCamera) continue;
@@ -107,32 +109,41 @@ public class DoorEntrySequence : MonoBehaviour
         }
         else
         {
-            Debug.LogError("[DoorEntrySequence] Third Person Camera Ã»ÓĞ¸³Öµ£¬ÎŞ·¨ÇĞ»»ÊÓ½Ç¡£", this);
+            Debug.LogError("[DoorEntrySequence] Third Person Camera æ²¡æœ‰èµ‹å€¼ï¼Œæ— æ³•åˆ‡æ¢è§†è§’ã€‚", this);
         }
 
         if (debugLog) LogCameraState();
 
-        // 3. ÏÔÊ¾ËéËéÄî
+        // 3. æ˜¾ç¤ºç¢ç¢å¿µ
         if (thoughtLabel != null) thoughtLabel.text = thoughtText;
         if (thoughtBubble != null) thoughtBubble.SetActive(true);
-        if (debugLog) Debug.Log("[DoorEntrySequence] ÏÔÊ¾ËéËéÄî");
+
+        // è®©å›ºå®šæœºä½è½¬å‘æ°”æ³¡ï¼Œé˜²æ­¢ç›¸æœºå¯¹ç€å¢™çœ‹ä¸åˆ°ç¢ç¢å¿µ
+        if (aimAtThought && thirdPersonCamera != null && thoughtBubble != null)
+        {
+            Vector3 dir = thoughtBubble.transform.position - thirdPersonCamera.transform.position;
+            if (dir.sqrMagnitude > 0.0001f)
+                thirdPersonCamera.transform.rotation = Quaternion.LookRotation(dir, Vector3.up);
+        }
+
+        if (debugLog) Debug.Log("[DoorEntrySequence] æ˜¾ç¤ºç¢ç¢å¿µ");
 
         yield return new WaitForSeconds(thoughtDuration);
 
-        // 4. ÏÈÈÃËéËéÄîÏûÊ§
+        // 4. å…ˆè®©ç¢ç¢å¿µæ¶ˆå¤±
         if (thoughtBubble != null) thoughtBubble.SetActive(false);
 
-        // µÈÒ»Ö¡£¬È·±£ËüÒÑ¾­ÕæÕıÒş²Ø
+        // ç­‰ä¸€å¸§ï¼Œç¡®ä¿å®ƒå·²ç»çœŸæ­£éšè—
         yield return null;
 
-        // ÔÙµÈÒ»Ğ¡¶Î¼ä¸ô£¬±ÜÃâºÍÈÎÎñµ¯´°Í¬Ö¡³öÏÖ
+        // å†ç­‰ä¸€å°æ®µé—´éš”ï¼Œé¿å…å’Œä»»åŠ¡å¼¹çª—åŒå¸§å‡ºç°
         if (thoughtHideDelay > 0f)
             yield return new WaitForSeconds(thoughtHideDelay);
 
-        // 5. ËéËéÄîÏûÊ§ºó²Å³öÏÖÈÎÎñµ¯´°
+        // 5. ç¢ç¢å¿µæ¶ˆå¤±åæ‰å‡ºç°ä»»åŠ¡å¼¹çª—
         if (taskLabel != null) taskLabel.text = taskText;
         if (taskPanel != null) taskPanel.SetActive(true);
-        if (debugLog) Debug.Log("[DoorEntrySequence] ËéËéÄîÒÑÏûÊ§£¬ÏÔÊ¾ÈÎÎñµ¯´°£¬µÈ´ıÈ·¶¨");
+        if (debugLog) Debug.Log("[DoorEntrySequence] ç¢ç¢å¿µå·²æ¶ˆå¤±ï¼Œæ˜¾ç¤ºä»»åŠ¡å¼¹çª—ï¼Œç­‰å¾…ç¡®å®š");
     }
 
     private void OnConfirmClicked()
@@ -146,7 +157,7 @@ public class DoorEntrySequence : MonoBehaviour
         if (taskPanel != null) taskPanel.SetActive(false);
         if (thoughtBubble != null) thoughtBubble.SetActive(false);
 
-        // »Ö¸´ËùÓĞÏà»úÔ­À´µÄÆôÓÃ×´Ì¬
+        // æ¢å¤æ‰€æœ‰ç›¸æœºåŸæ¥çš„å¯ç”¨çŠ¶æ€
         if (allCameras != null)
         {
             for (int i = 0; i < allCameras.Length; i++)
@@ -156,7 +167,7 @@ public class DoorEntrySequence : MonoBehaviour
             }
         }
 
-        // µÚÈıÈË³Æ¹Øµô
+        // ç¬¬ä¸‰äººç§°å…³æ‰
         if (thirdPersonCamera != null)
         {
             thirdPersonCamera.enabled = false;
@@ -164,11 +175,11 @@ public class DoorEntrySequence : MonoBehaviour
                 thirdPersonCamera.gameObject.SetActive(false);
         }
 
-        // µÚÒ»ÈË³ÆÈ·±£´ò¿ª
+        // ç¬¬ä¸€äººç§°ç¡®ä¿æ‰“å¼€
         if (firstPersonCamera != null)
             firstPersonCamera.enabled = true;
 
-        // »Ö¸´ÒÆ¶¯ºÍÊó±êËø¶¨
+        // æ¢å¤ç§»åŠ¨å’Œé¼ æ ‡é”å®š
         if (playerMover != null)
         {
             playerMover.SetControl(true, true);
@@ -193,7 +204,7 @@ public class DoorEntrySequence : MonoBehaviour
 
         if (thirdPersonCamera != null)
         {
-            Debug.Log($"[DoorEntrySequence] Ä¿±êµÚÈıÈË³Æ = {thirdPersonCamera.name}, " +
+            Debug.Log($"[DoorEntrySequence] ç›®æ ‡ç¬¬ä¸‰äººç§° = {thirdPersonCamera.name}, " +
                       $"enabled={thirdPersonCamera.enabled}, " +
                       $"pos={thirdPersonCamera.transform.position}, " +
                       $"rot={thirdPersonCamera.transform.eulerAngles}");
@@ -202,7 +213,7 @@ public class DoorEntrySequence : MonoBehaviour
 
     void LateUpdate()
     {
-        // ËéËéÄîÆøÅİÊ¼ÖÕÃæÏòµ±Ç°Ïà»ú
+        // ç¢ç¢å¿µæ°”æ³¡å§‹ç»ˆé¢å‘å½“å‰ç›¸æœº
         if (thoughtBubble != null && thoughtBubble.activeSelf)
         {
             Transform cam = null;

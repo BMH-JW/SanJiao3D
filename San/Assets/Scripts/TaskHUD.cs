@@ -46,6 +46,11 @@ public class TaskHUD : MonoBehaviour
     [Tooltip("3D 部分要关掉的顶层物体，例如 第一场景、Player、door (2)、dingzi (2)")]
     public GameObject[] deactivateOn2D;
 
+    // ---------------- 返回 3D ----------------
+    [Header("返回 3D 房间")]
+    [Tooltip("返回后是否恢复玩家的移动和转视角；关闭时保持冻结，只展示第一人称画面")]
+    public bool restorePlayerControlOnReturn = true;
+
     // ---------------- 行为 ----------------
     [Header("行为")]
     [Tooltip("完成弹窗出现时暂停时间，切 2D 时恢复")]
@@ -60,21 +65,47 @@ public class TaskHUD : MonoBehaviour
     // ---------------- 内部 ----------------
     private readonly List<BoundEntry> boundEntries = new List<BoundEntry>();
     private readonly HashSet<string> pickedIds = new HashSet<string>();
+    private readonly List<GameObject> foodRoots = new List<GameObject>();
+    private GameObject foodPanel;         // 食材图标所在的独立面板
     private bool shown = false;
     private bool completed = false;
+
+    // 进入 2D 前的玩家位置，返回时原地放回
+    private Vector3 savedPlayerPosition;
+    private float savedPlayerYaw;
+    private bool hasSavedPlayerPose = false;
 
     // ========================================================================
 
     private void Awake()
     {
+        // 场景里残留了一个禁用的 TaskHUD，跳过它，避免重复报错
+        if (!enabled) return;
+
         // 清掉上次运行遗留的暂停状态，避免一开始就卡住
         Time.timeScale = 1f;
 
-        // Panel 指向自己时自动找子物体
+        // Panel 指向自己或为空时，自动在子物体里找 TaskHUDPanel（递归，不限层级）
         if (panel == null || panel == gameObject)
         {
-            Transform found = transform.Find("TaskHUDPanel");
+            Transform found = FindChildRecursive(transform, "TaskHUDPanel");
             if (found != null) panel = found.gameObject;
+        }
+
+        // 还找不到就在整个场景里按名字找，避免 HUD 一开始就露出来
+        if (panel == null || panel == gameObject)
+            panel = FindPanelInScene("TaskHUDPanel");
+
+        // 最后兜底：用食材图标的父物体当面板
+        if ((panel == null || panel == gameObject) && foodEntries != null)
+        {
+            for (int i = 0; i < foodEntries.Length; i++)
+            {
+                FoodEntry e = foodEntries[i];
+                if (e == null || e.root == null || e.root.transform.parent == null) continue;
+                panel = e.root.transform.parent.gameObject;
+                break;
+            }
         }
 
         if (panel == null || panel == gameObject)
@@ -87,6 +118,39 @@ public class TaskHUD : MonoBehaviour
         }
 
         BindEntries();
+
+        // 食材图标可能不在 panel 下，而是放在另一个面板（TaskHUDPanel (1)）里，
+        // 这里单独把它也关掉，避免一进场景就提前显示
+        foodPanel = ResolveFoodPanel();
+        if (foodPanel != null && foodPanel != panel)
+            foodPanel.SetActive(false);
+
+        // 三个图标可能分散在不同父物体下，逐个也关掉一次
+        foodRoots.Clear();
+        if (foodEntries != null)
+        {
+            for (int i = 0; i < foodEntries.Length; i++)
+            {
+                FoodEntry e = foodEntries[i];
+                if (e == null) continue;
+
+                // 还找不到 Root 的，在全场景 UI 里按名字 + 是否有 Check 来找
+                if (e.root == null && !string.IsNullOrEmpty(e.ingredientId))
+                    e.root = FindUICheckRoot(e.ingredientId);
+
+                if (e.root == null) continue;
+                foodRoots.Add(e.root);
+                e.root.SetActive(false);
+            }
+        }
+
+        // TaskIcon 和三个食材图标同步显示/隐藏
+        GameObject taskIcon = FindUIObject("TaskIcon");
+        if (taskIcon != null && !foodRoots.Contains(taskIcon))
+        {
+            foodRoots.Add(taskIcon);
+            taskIcon.SetActive(false);
+        }
 
         if (completePanel != null) completePanel.SetActive(false);
         if (level2DPanel != null) level2DPanel.SetActive(false);
@@ -127,6 +191,10 @@ public class TaskHUD : MonoBehaviour
     {
         shown = true;
         if (panel != null) panel.SetActive(true);
+        if (foodPanel != null) foodPanel.SetActive(true);
+
+        for (int i = 0; i < foodRoots.Count; i++)
+            if (foodRoots[i] != null) foodRoots[i].SetActive(true);
 
         for (int i = 0; i < boundEntries.Count; i++)
         {
@@ -143,6 +211,13 @@ public class TaskHUD : MonoBehaviour
     {
         shown = false;
         if (panel != null) panel.SetActive(false);
+        if (foodPanel != null) foodPanel.SetActive(false);
+
+        for (int i = 0; i < foodRoots.Count; i++)
+            if (foodRoots[i] != null) foodRoots[i].SetActive(false);
+
+        // 对勾可能不在图标下面，单独关一次，保证切 2D 后不残留
+        SetAllMarks(false);
     }
 
     // ========================================================================
@@ -172,7 +247,23 @@ public class TaskHUD : MonoBehaviour
         // 1. 关弹窗和 HUD
         if (completePanel != null) completePanel.SetActive(false);
         if (panel != null) panel.SetActive(false);
+        if (foodPanel != null) foodPanel.SetActive(false);
+        for (int i = 0; i < foodRoots.Count; i++)
+            if (foodRoots[i] != null) foodRoots[i].SetActive(false);
+
+        // 对勾可能不在图标下面，单独关一次
+        SetAllMarks(false);
         Debug.Log("[TaskHUD] 弹窗 & HUD 已关");
+
+        // 1.5 记录玩家当前位置，2D 结束后原地恢复
+        PlayerMover savePlayer = FindObjectOfType<PlayerMover>();
+        if (savePlayer != null)
+        {
+            savedPlayerPosition = savePlayer.transform.position;
+            savedPlayerYaw = savePlayer.transform.eulerAngles.y;
+            hasSavedPlayerPose = true;
+            Debug.Log("[TaskHUD] 记录玩家位置：" + savedPlayerPosition);
+        }
 
         // 2. 关 3D 顶层物体
         if (deactivateOn2D != null)
@@ -221,6 +312,85 @@ public class TaskHUD : MonoBehaviour
         Debug.Log("========== [TaskHUD] 完成 ==========");
     }
 
+    /// <summary>2D 小游戏结束后调用：恢复 3D 物体、回到第一人称、关闭 2D 面板。</summary>
+    public void ReturnTo3D()
+    {
+        Debug.Log("========== [TaskHUD] 从 2D 返回 3D ==========", this);
+
+        // 1. 恢复之前关掉的 3D 顶层物体
+        if (deactivateOn2D != null)
+        {
+            for (int i = 0; i < deactivateOn2D.Length; i++)
+            {
+                GameObject go = deactivateOn2D[i];
+                if (go == null) continue;
+                go.SetActive(true);
+                Debug.Log("[TaskHUD] 恢复 3D：" + go.name);
+            }
+        }
+
+        // 2. 把玩家放回进 2D 前的位置，保持第一人称视角
+        PlayerMover posePlayer = FindObjectOfType<PlayerMover>();
+        if (posePlayer != null && hasSavedPlayerPose)
+        {
+            posePlayer.Teleport(savedPlayerPosition, savedPlayerYaw);
+            Debug.Log("[TaskHUD] 玩家已回到进 2D 前的位置：" + savedPlayerPosition);
+        }
+
+        // 3. 确保回到第一人称：打开玩家相机，关掉会盖住画面的其它相机（门口过场机位）
+        PlayerMover camOwner = FindObjectOfType<PlayerMover>();
+        Camera firstCam = camOwner != null && camOwner.cameraTransform != null
+            ? camOwner.cameraTransform.GetComponent<Camera>()
+            : null;
+
+        if (firstCam != null)
+        {
+            Transform t = firstCam.transform;
+            while (t != null)
+            {
+                if (!t.gameObject.activeSelf) t.gameObject.SetActive(true);
+                t = t.parent;
+            }
+            firstCam.enabled = true;
+        }
+        else
+        {
+            Debug.LogWarning("[TaskHUD] 找不到玩家身上的第一人称相机，画面可能停在门外的机位", this);
+        }
+
+        foreach (Camera c in FindObjectsOfType<Camera>(true))
+        {
+            if (c == null || c == firstCam) continue;
+            if (firstCam != null && c.depth < firstCam.depth) continue;
+            c.enabled = false;
+            if (debugLog) Debug.Log("[TaskHUD] 关闭其它相机：" + c.name);
+        }
+
+        if (debugLog)
+        {
+            foreach (Camera c in FindObjectsOfType<Camera>(true))
+            {
+                if (c == null) continue;
+                Debug.Log("[TaskHUD] 相机 " + c.name + " 激活=" + c.gameObject.activeInHierarchy +
+                          " 启用=" + c.enabled + " 位置=" + c.transform.position);
+            }
+        }
+
+        // 4. 玩家控制
+        PlayerMover pm = FindObjectOfType<PlayerMover>();
+        if (pm != null)
+        {
+            pm.SetControl(restorePlayerControlOnReturn, restorePlayerControlOnReturn);
+            pm.LockCursor(restorePlayerControlOnReturn);
+            Debug.Log("[TaskHUD] 玩家控制：" + (restorePlayerControlOnReturn ? "恢复" : "保持冻结"));
+        }
+
+        // 5. 最后关闭 2D 面板
+        if (level2DPanel != null) level2DPanel.SetActive(false);
+
+        Debug.Log("========== [TaskHUD] 已回到 3D 房间 ==========");
+    }
+
     // ========================================================================
     // 绑定 + 刷新
     // ========================================================================
@@ -240,6 +410,17 @@ public class TaskHUD : MonoBehaviour
             if (string.IsNullOrEmpty(cfg.ingredientId))
                 Debug.LogError("[TaskHUD] 第 " + i + " 个条目没填 Ingredient Id。", this);
 
+            // Root 没填时，按 Ingredient Id 在 HUD 里自动找（优先找带 Check 的父物体）
+            if (cfg.root == null && !string.IsNullOrEmpty(cfg.ingredientId))
+            {
+                GameObject resolved = ResolveFoodRoot(cfg.ingredientId);
+                if (resolved != null)
+                {
+                    cfg.root = resolved;
+                    if (debugLog) Debug.Log("[TaskHUD] " + cfg.ingredientId + " 自动找到 Root：" + resolved.name, resolved);
+                }
+            }
+
             if (cfg.root == null)
             {
                 Debug.LogError("[TaskHUD] 第 " + i + " 个条目（" + cfg.ingredientId + "）Root 是空的。", this);
@@ -247,6 +428,20 @@ public class TaskHUD : MonoBehaviour
             else
             {
                 Transform check = FindChildRecursive(cfg.root.transform, "Check");
+
+                // 可能拖成了图标子物体：往上一级找同名的父物体（父物体下面才有 Check）
+                if (check == null)
+                {
+                    Transform parent = cfg.root.transform.parent;
+                    if (parent != null &&
+                        string.Equals(parent.name.Trim(), cfg.ingredientId.Trim(), System.StringComparison.OrdinalIgnoreCase))
+                    {
+                        check = FindChildRecursive(parent, "Check");
+                        if (check != null && debugLog)
+                            Debug.Log("[TaskHUD] " + cfg.root.name + " 的 Check 在父物体 " + parent.name + " 下，已自动改用", parent);
+                    }
+                }
+
                 if (check == null)
                 {
                     Debug.LogError("[TaskHUD] " + cfg.root.name + " 下找不到 Check，实际：" + ListAllChildren(cfg.root.transform), cfg.root);
@@ -361,6 +556,102 @@ public class TaskHUD : MonoBehaviour
                 return t;
         }
         return null;
+    }
+
+    // 在全场景 UI 里按名字找物体（排除 Prefab 资源和 3D 物体）
+    private static GameObject FindUIObject(string objectName)
+    {
+        string key = objectName.Trim().ToLowerInvariant();
+
+        Transform[] all = Resources.FindObjectsOfTypeAll<Transform>();
+        for (int i = 0; i < all.Length; i++)
+        {
+            Transform t = all[i];
+            if (t == null || !t.gameObject.scene.IsValid()) continue;
+            if (!(t is RectTransform)) continue;
+            if (t.name.Trim().ToLowerInvariant() != key) continue;
+
+            return t.gameObject;
+        }
+
+        return null;
+    }
+
+    // 在全场景 UI 里按名字找带 Check 的食材图标根（排除 3D 物体同名的情况）
+    private static GameObject FindUICheckRoot(string ingredientId)
+    {
+        string key = ingredientId.Trim().ToLowerInvariant();
+
+        Transform[] all = Resources.FindObjectsOfTypeAll<Transform>();
+        for (int i = 0; i < all.Length; i++)
+        {
+            Transform t = all[i];
+            if (t == null || !t.gameObject.scene.IsValid()) continue;
+            if (!(t is RectTransform)) continue;             // 只找 UI
+            if (t.name.Trim().ToLowerInvariant() != key) continue;
+            if (FindChildRecursive(t, "Check") == null) continue;
+
+            return t.gameObject;
+        }
+
+        return null;
+    }
+
+    // 食材图标所在的父面板（可能和 panel 字段指向的不是同一个物体）
+    private GameObject ResolveFoodPanel()
+    {
+        if (foodEntries == null) return null;
+
+        for (int i = 0; i < foodEntries.Length; i++)
+        {
+            FoodEntry e = foodEntries[i];
+            if (e == null || e.root == null) continue;
+
+            Transform p = e.root.transform.parent;
+            if (p != null) return p.gameObject;
+        }
+
+        return null;
+    }
+
+    // 在整个已加载场景里按名字找物体（排除 Prefab 资源）
+    private static GameObject FindPanelInScene(string objectName)
+    {
+        GameObject[] all = Resources.FindObjectsOfTypeAll<GameObject>();
+        for (int i = 0; i < all.Length; i++)
+        {
+            GameObject go = all[i];
+            if (go == null || !go.scene.IsValid()) continue;
+            if (string.Equals(go.name.Trim(), objectName, System.StringComparison.OrdinalIgnoreCase))
+                return go;
+        }
+        return null;
+    }
+
+    // 按 Ingredient Id 在 HUD 里找食物图标根物体（优先选下面带 Check 的父物体）
+    private GameObject ResolveFoodRoot(string ingredientId)
+    {
+        Transform searchRoot = panel != null ? panel.transform : transform;
+        string id = ingredientId.Trim().ToLowerInvariant();
+
+        Transform fallback = null;
+        Transform[] all = searchRoot.GetComponentsInChildren<Transform>(true);
+
+        for (int i = 0; i < all.Length; i++)
+        {
+            Transform t = all[i];
+            if (t == searchRoot) continue;
+
+            string n = t.name.Trim().ToLowerInvariant();
+            if (n != id && !n.Contains(id)) continue;
+
+            if (FindChildRecursive(t, "Check") != null)
+                return t.gameObject;
+
+            if (fallback == null) fallback = t;
+        }
+
+        return fallback != null ? fallback.gameObject : null;
     }
 
     private static string ListAllChildren(Transform root)

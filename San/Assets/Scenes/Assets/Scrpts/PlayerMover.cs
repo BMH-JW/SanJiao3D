@@ -70,7 +70,18 @@ public class PlayerMover : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (!canMove) return;
+        if (!canMove)
+        {
+            // 冻结时清掉水平惯性，避免过场期间人还在滑、最后滑出门外
+            if (rb != null)
+            {
+                Vector3 stop = rb.velocity;
+                stop.x = 0f;
+                stop.z = 0f;
+                rb.velocity = stop;
+            }
+            return;
+        }
 
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
@@ -87,6 +98,25 @@ public class PlayerMover : MonoBehaviour
     {
         canMove = move;
         canLook = look;
+    }
+
+    /// <summary>把玩家瞬移回指定位置和朝向（同步内部 yaw，避免下一次转视角跳回）。</summary>
+    public void Teleport(Vector3 position, float yawDegrees)
+    {
+        yaw = yawDegrees;
+        pitch = 0f;
+
+        transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+        if (cameraTransform != null)
+            cameraTransform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
+
+        if (rb != null)
+        {
+            rb.velocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            rb.position = position;
+        }
+        transform.position = position;
     }
 
     /// <summary>锁定/解锁鼠标光标。UI 按钮可点击时解锁。</summary>
