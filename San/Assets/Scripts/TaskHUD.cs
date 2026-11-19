@@ -22,14 +22,14 @@ public class TaskHUD : MonoBehaviour
 
     // ---------------- HUD ----------------
     [Header("HUD")]
-    [Tooltip("HUD 根物体（背包图标 + 食物图标），不能是脚本自己所在的物体")]
+    [Tooltip("HUD 根物体（背包图标 + 食物图标），必须是子物体，不能是脚本自己所在的物体")]
     public GameObject panel;
 
     public FoodEntry[] foodEntries;
 
     // ---------------- 完成弹窗 ----------------
     [Header("完成弹窗")]
-    [Tooltip("完成弹窗根物体，默认要关掉")]
+    [Tooltip("完成弹窗根物体，默认关闭")]
     public GameObject completePanel;
 
     [Tooltip("弹窗文字，可选")]
@@ -40,21 +40,21 @@ public class TaskHUD : MonoBehaviour
 
     // ---------------- 2D 切换 ----------------
     [Header("2D 关卡（同场景 Overlay Canvas 切换）")]
-    [Tooltip("2D 面板的根物体（Canvas 下的子物体，例如 Panel2D）。运行前在 Hierarchy 里手动关掉它")]
+    [Tooltip("2D 面板的根物体，例如 Canvas 下的 Panel2D。运行前手动关掉")]
     public GameObject level2DPanel;
 
-    [Tooltip("3D 部分要关掉的顶层物体，例如 第一场景、Player、door (2)、dingzi (2)。脚本会 SetActive(false) 它们")]
+    [Tooltip("3D 部分要关掉的顶层物体，例如 第一场景、Player、door (2)、dingzi (2)")]
     public GameObject[] deactivateOn2D;
 
     // ---------------- 行为 ----------------
     [Header("行为")]
-    [Tooltip("弹窗出现时暂停，切到 2D 时恢复")]
+    [Tooltip("完成弹窗出现时暂停时间，切 2D 时恢复")]
     public bool pauseOnComplete = true;
 
-    [Tooltip("切到 2D 时禁用玩家控制")]
+    [Tooltip("切到 2D 时关闭玩家控制并解锁鼠标")]
     public bool disablePlayerControl = true;
 
-    [Tooltip("调试日志")]
+    [Tooltip("打印调试日志")]
     public bool debugLog = true;
 
     // ---------------- 内部 ----------------
@@ -67,13 +67,26 @@ public class TaskHUD : MonoBehaviour
 
     private void Awake()
     {
-        if (panel == null) panel = gameObject;
-        BindEntries();
+        // 清掉上次运行遗留的暂停状态，避免一开始就卡住
+        Time.timeScale = 1f;
 
-        if (panel == gameObject)
-            Debug.LogError("[TaskHUD] Panel 不能和脚本在同一个物体上！", this);
+        // Panel 指向自己时自动找子物体
+        if (panel == null || panel == gameObject)
+        {
+            Transform found = transform.Find("TaskHUDPanel");
+            if (found != null) panel = found.gameObject;
+        }
+
+        if (panel == null || panel == gameObject)
+        {
+            Debug.LogWarning("[TaskHUD] Panel 指向了脚本自己，HUD 不会自动隐藏。请把 Panel 拖到子物体 TaskHUDPanel。", this);
+        }
         else
+        {
             panel.SetActive(false);
+        }
+
+        BindEntries();
 
         if (completePanel != null) completePanel.SetActive(false);
         if (level2DPanel != null) level2DPanel.SetActive(false);
@@ -107,7 +120,7 @@ public class TaskHUD : MonoBehaviour
     private void OnDisable() { IngredientPickup.Picked -= OnIngredientPicked; }
 
     // ========================================================================
-    // 对外
+    // 对外接口
     // ========================================================================
 
     public void Show()
@@ -140,6 +153,7 @@ public class TaskHUD : MonoBehaviour
     {
         if (string.IsNullOrEmpty(id)) return;
         pickedIds.Add(id);
+
         if (debugLog) Debug.Log("[TaskHUD] 拾取：" + id, this);
 
         if (shown)
@@ -161,20 +175,22 @@ public class TaskHUD : MonoBehaviour
         Debug.Log("[TaskHUD] 弹窗 & HUD 已关");
 
         // 2. 关 3D 顶层物体
-        for (int i = 0; i < deactivateOn2D.Length; i++)
+        if (deactivateOn2D != null)
         {
-            GameObject go = deactivateOn2D[i];
-            if (go != null)
+            for (int i = 0; i < deactivateOn2D.Length; i++)
             {
-                go.SetActive(false);
-                Debug.Log("[TaskHUD] 关闭 3D：" + go.name);
+                GameObject go = deactivateOn2D[i];
+                if (go != null)
+                {
+                    go.SetActive(false);
+                    Debug.Log("[TaskHUD] 关闭 3D：" + go.name);
+                }
             }
         }
 
-        // 3. 开 2D 面板（Overlay Canvas 子物体，直接 SetActive 即可）
+        // 3. 打开 2D 面板
         if (level2DPanel != null)
         {
-            // 保险：父级全激活
             Transform t = level2DPanel.transform;
             while (t != null && t.parent != null)
             {
@@ -232,7 +248,9 @@ public class TaskHUD : MonoBehaviour
             {
                 Transform check = FindChildRecursive(cfg.root.transform, "Check");
                 if (check == null)
+                {
                     Debug.LogError("[TaskHUD] " + cfg.root.name + " 下找不到 Check，实际：" + ListAllChildren(cfg.root.transform), cfg.root);
+                }
                 else
                 {
                     be.checkMark = check.gameObject;
@@ -255,6 +273,7 @@ public class TaskHUD : MonoBehaviour
             if (be.checkMark != null)
             {
                 if (be.checkMark.activeSelf != done) be.checkMark.SetActive(done);
+
                 if (done)
                 {
                     Graphic g = be.checkMark.GetComponent<Graphic>();
@@ -308,6 +327,7 @@ public class TaskHUD : MonoBehaviour
         if (completePanel != null)
         {
             completePanel.SetActive(true);
+
             Transform t = completePanel.transform;
             while (t != null && t.parent != null)
             {

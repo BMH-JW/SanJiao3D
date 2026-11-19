@@ -9,7 +9,7 @@ public class IngredientPickup : MonoBehaviour
     public string ingredientId = "";
 
     [Header("提示 UI")]
-    [Tooltip("只能是食材自己的提示小物体（WorldSpace Canvas 或一行 Text）。严禁拖屏幕主 Canvas / HUD 面板！")]
+    [Tooltip("提示物体。建议指向独立的提示子物体（如 Canvas/PickupPrompt），不要指向整个屏幕 Canvas")]
     public GameObject promptRoot;
     [Tooltip("可选：提示文字组件")]
     public Text promptLabel;
@@ -24,7 +24,7 @@ public class IngredientPickup : MonoBehaviour
     public KeyCode pickupKey = KeyCode.E;
 
     [Header("拾取后")]
-    [Tooltip("留空 = 隐藏脚本所在物体。只能填食材模型，严禁填 Canvas / HUD！")]
+    [Tooltip("留空 = 隐藏脚本所在物体。只能填食材模型，不要填 Canvas / HUD")]
     public GameObject objectToHide;
     public bool destroyInsteadOfHide = false;
 
@@ -153,8 +153,8 @@ public class IngredientPickup : MonoBehaviour
 
         if (ContainsUI(target))
         {
-            // 目标里含 Canvas / HUD，直接 SetActive(false) 会把界面一起关掉
-            Debug.LogWarning("[IngredientPickup] 目标里含有 UI，改为只隐藏模型：" + GetPath(target.transform) + "。请把 Object To Hide 改成食材模型本身。", target);
+            Debug.LogWarning("[IngredientPickup] 目标里含有 UI，改为只隐藏模型：" + GetPath(target.transform) +
+                             "。请把 Object To Hide 改成食材模型本身。", target);
             HideVisualOnly(target);
         }
         else
@@ -189,16 +189,38 @@ public class IngredientPickup : MonoBehaviour
     private void CheckPromptSafety()
     {
         promptUnsafe = false;
+        promptTexts = null;
         if (promptRoot == null) return;
 
         if (!ContainsUI(promptRoot)) return;
 
         promptUnsafe = true;
-        promptTexts = promptRoot.GetComponentsInChildren<Text>(true);
 
-        Debug.LogError("[IngredientPickup] Prompt Root 不能是屏幕 Canvas 或 HUD！当前是：" +
-                       GetPath(promptRoot.transform) +
-                       "。已自动改为只开关提示文字，界面不会再被关掉。请按正确结构重新拖一个独立提示小物体。", promptRoot);
+        // 优先只用指定的 Prompt Label
+        if (promptLabel != null)
+        {
+            promptTexts = new Text[] { promptLabel };
+            Debug.LogWarning("[IngredientPickup] Prompt Root 是屏幕 Canvas（" + GetPath(promptRoot.transform) +
+                             "），已改为只开关 Prompt Label：" + GetPath(promptLabel.transform) +
+                             "。建议把 Prompt Root 指向独立的提示子物体。", this);
+            return;
+        }
+
+        // 没指定 Label：按名字找提示文字
+        Text[] all = promptRoot.GetComponentsInChildren<Text>(true);
+        for (int i = 0; i < all.Length; i++)
+        {
+            string n = all[i].name.ToLowerInvariant();
+            if (n.Contains("prompt") || n.Contains("pickup") || n.Contains("拾取") || n.Contains("提示"))
+            {
+                promptTexts = new Text[] { all[i] };
+                Debug.LogWarning("[IngredientPickup] Prompt Root 是屏幕 Canvas，已改为只开关文字：" +
+                                 GetPath(all[i].transform), this);
+                return;
+            }
+        }
+
+        Debug.LogError("[IngredientPickup] Prompt Root 指向屏幕 Canvas，但找不到提示文字。请把 Prompt Root 指向提示文字所在的子物体，或指定 Prompt Label。", this);
     }
 
     // ---------------- 范围与最近判定 ----------------
@@ -258,13 +280,10 @@ public class IngredientPickup : MonoBehaviour
 
         if (promptUnsafe)
         {
-            // 只开关文字，绝不动 Canvas / 面板
-            if (promptTexts != null)
+            if (promptTexts == null) return;
+            for (int i = 0; i < promptTexts.Length; i++)
             {
-                for (int i = 0; i < promptTexts.Length; i++)
-                {
-                    if (promptTexts[i] != null) promptTexts[i].enabled = visible;
-                }
+                if (promptTexts[i] != null) promptTexts[i].enabled = visible;
             }
             return;
         }
