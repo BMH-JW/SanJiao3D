@@ -14,8 +14,8 @@ public class VegItem : MonoBehaviour, IPointerClickHandler
     public bool moveToBoardParent = true;
 
     [Header("切割")]
-    public int targetCutCount = 3;   // 本蔬菜总共要切几次（每蔬菜独立，次数可不同）
-    public float finishRatio = 0.2f; // 切完后剩余长度比例（0.2 = 还剩 20%）
+    public int targetCutCount = 3;
+    public float finishRatio = 0.2f;
 
     public bool IsOnBoard { get; private set; }
     public bool IsCutDone { get; private set; }
@@ -29,7 +29,7 @@ public class VegItem : MonoBehaviour, IPointerClickHandler
     private CutGameManager manager;
     private Coroutine flyCoroutine;
     private Graphic vegGraphic;
-    private float fixedLeftEdgeLocal;   // 落板后锁的左边缘（本地坐标）
+    private float fixedLeftEdgeLocal;
 
     void Awake()
     {
@@ -37,40 +37,74 @@ public class VegItem : MonoBehaviour, IPointerClickHandler
         baseSize = rt.sizeDelta;
         originalLocalPos = rt.anchoredPosition;
         originalParent = rt.parent;
-        manager = FindObjectOfType<CutGameManager>();
         vegGraphic = GetComponent<Graphic>();
+        manager = ResolveManager();
+    }
+
+    // 先找激活的，再找未激活的并自动激活
+    private CutGameManager ResolveManager()
+    {
+        if (manager != null) return manager;
+
+        manager = FindObjectOfType<CutGameManager>();
+        if (manager != null) return manager;
+
+#if UNITY_2020_1_OR_NEWER
+        CutGameManager inactive = FindObjectOfType<CutGameManager>(true);
+        if (inactive != null)
+        {
+            Debug.LogWarning("[VegItem] CutGameManager 所在物体未激活，已自动激活：" + GetPath(inactive.transform), inactive);
+            inactive.gameObject.SetActive(true);
+            manager = inactive;
+            return manager;
+        }
+#endif
+
+        Debug.LogError("[VegItem] 场景里找不到 CutGameManager 组件。请把 CutGameManager 挂到 2DCanvas 上，并确认它没有被 Deactivate On 2D 关掉。", this);
+        return null;
+    }
+
+    private static string GetPath(Transform t)
+    {
+        string path = t.name;
+        while (t.parent != null)
+        {
+            t = t.parent;
+            path = t.name + "/" + path;
+        }
+        return path;
     }
 
     public void OnPointerClick(PointerEventData eventData)
     {
-        Debug.Log($"点击蔬菜：{name}，IsOnBoard={IsOnBoard}");
+        Debug.Log("点击蔬菜：" + name + "，IsOnBoard=" + IsOnBoard);
 
         if (IsOnBoard)
         {
+            if (manager == null) manager = ResolveManager();
             if (manager != null) manager.OnCutClick(eventData.position);
             return;
         }
 
-        // 正在飞行中，忽略重复点击
         if (flyCoroutine != null) return;
 
-        // 上一个蔬菜还没切完或碎片还没全部入盘，不允许点下一个蔬菜
-        if (manager == null) manager = FindObjectOfType<CutGameManager>();
-        if (manager != null && !manager.CanPickNextVeg())
+        if (manager == null) manager = ResolveManager();
+        if (manager == null) return;
+
+        if (!manager.CanPickNextVeg())
         {
-            Debug.Log($"[VegItem] 上一个蔬菜的碎片还没全部处理完，暂不能选择 {name}");
+            Debug.Log("[VegItem] 上一个蔬菜的碎片还没全部处理完，暂不能选择 " + name);
             return;
         }
 
         StartFly();
     }
 
-    // 给 CutGameManager 调用：从原位飞到菜板（自动下一个蔬菜时用）
     public void StartFly()
     {
         if (boardCenter == null || !boardCenter.gameObject.activeInHierarchy)
         {
-            Debug.LogError("Board Center 为空或未激活");
+            Debug.LogError("[VegItem] Board Center 为空或未激活", this);
             return;
         }
 
@@ -101,18 +135,17 @@ public class VegItem : MonoBehaviour, IPointerClickHandler
         IsOnBoard = true;
         flyCoroutine = null;
 
-        if (manager == null) manager = FindObjectOfType<CutGameManager>();
-        if (manager != null) manager.SetCurrentVeg(this);
+        if (manager == null) manager = ResolveManager();
+        if (manager == null) yield break;      // 协程里不能用 return;
+
+        manager.SetCurrentVeg(this);
     }
 
-    // 蔬菜落板后，由 manager 调一次：记录落板位置作为单边缩的固定左边缘
     public void LockLeftEdge()
     {
         fixedLeftEdgeLocal = rt.anchoredPosition.x - rt.sizeDelta.x * 0.5f;
     }
 
-    // 切一刀：按切次数线性缩短（targetCutCount 次后缩到 finishRatio）
-    // 返回 true = 还没切完；false = 切完
     public bool CutOnce()
     {
         CurrentCutCount++;
@@ -125,7 +158,9 @@ public class VegItem : MonoBehaviour, IPointerClickHandler
         rt.anchoredPosition = new Vector2(fixedLeftEdgeLocal + newWidth * 0.5f, rt.anchoredPosition.y);
 
         IsCutDone = CurrentCutCount >= targetCutCount;
-        Debug.Log($"[{name}] 切第 {CurrentCutCount}/{targetCutCount} 刀，剩余 {CurrentRatio:F2}，宽 {newWidth:F1}，切完={IsCutDone}");
+        Debug.Log("[" + name + "] 切第 " + CurrentCutCount + "/" + targetCutCount +
+                  " 刀，剩余 " + CurrentRatio.ToString("F2") + "，宽 " + newWidth.ToString("F1") +
+                  "，切完=" + IsCutDone);
         return !IsCutDone;
     }
 

@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
-using System.Collections.Generic;
 
 public class CutGameManager : MonoBehaviour
 {
@@ -31,7 +30,7 @@ public class CutGameManager : MonoBehaviour
     public Vector2 plateSlotOffset = Vector2.zero;
 
     [Header("流程控制")]
-    public float plateHoldSeconds = 2f;   // 盘子停留多久后清空
+    public float plateHoldSeconds = 2f;
     public bool forceShowRedLineNow = true;
 
     [Header("音效")]
@@ -41,8 +40,11 @@ public class CutGameManager : MonoBehaviour
     [Header("起火与校准")]
     public GameObject fireIcon;            // 起火标志（可点击）
     public GameObject fireAnimation;       // 火焰帧动画（挂 Animator）
-    public GameObject calibrationCanvas;    // 校准条所在 Canvas（默认 inactive）
+    public GameObject calibrationCanvas;   // 校准条所在 Canvas（默认 inactive）
     public float fireIconDelay = 0.5f;     // 所有蔬菜切完后多久出现起火标志
+
+    [Header("调试")]
+    public bool debugLog = true;
 
     // 运行时状态
     public Phase CurrentPhase { get; private set; } = Phase.Idle;
@@ -62,7 +64,10 @@ public class CutGameManager : MonoBehaviour
         canClick = false;
         CurrentPhase = Phase.Idle;
 
-        // 强制覆盖 Inspector 里可能残留的旧值（避免序列化字段覆盖代码默认）
+        // 进入 2D 时确保时间在走（防止上一个阶段把 timeScale 停成 0）
+        Time.timeScale = 1f;
+
+        // 强制覆盖 Inspector 里可能残留的旧值
         plateHoldSeconds = 2f;
 
         if (feedbackPanel != null) feedbackPanel.SetActive(false);
@@ -79,13 +84,18 @@ public class CutGameManager : MonoBehaviour
 
         sfxSource = gameObject.GetComponent<AudioSource>();
         if (sfxSource == null) sfxSource = gameObject.AddComponent<AudioSource>();
+
+        if (debugLog)
+            Debug.Log("[Cut] Awake 完成 | timeScale=" + Time.timeScale +
+                      " | dynamicLine=" + (dynamicLine != null ? "已赋值" : "空") +
+                      " | redLine=" + (redLine != null ? "已赋值" : "空") +
+                      " | boardArea=" + (boardArea != null ? boardArea.name : "空") +
+                      " | allVegs=" + (allVegs != null ? allVegs.Length.ToString() : "空"), this);
     }
 
     void Start()
     {
-        // 自动开始：所有 Veg 重置后，玩家点第一个 Veg 触发 Flying → SetCurrentVeg → StartDynamicLine
-        // 这里不自动触发，让玩家去点 VegItem；或者如果你想全自动，解开下面这行：
-        // StartCuttingNextVeg();
+        // 玩家点第一个 Veg 触发 Flying → SetCurrentVeg → StartDynamicLine
     }
 
     void Update()
@@ -107,11 +117,35 @@ public class CutGameManager : MonoBehaviour
 
     void StartDynamicLine()
     {
-        if (dynamicLine == null) return;
+        if (dynamicLine == null)
+        {
+            Debug.LogError("[Cut] dynamicLine 没有赋值！请把 DynamicLine 拖到 CutGameManager 上", this);
+            return;
+        }
+
+        // 确保线自己和所有父级都激活
+        Transform t = dynamicLine;
+        while (t != null)
+        {
+            if (!t.gameObject.activeSelf)
+            {
+                Debug.LogWarning("[Cut] 父级处于关闭状态，已重新打开：" + t.name, t);
+                t.gameObject.SetActive(true);
+            }
+            t = t.parent;
+        }
+
         dynamicLine.anchoredPosition = new Vector2(-moveRange, dynamicLine.anchoredPosition.y);
         moveDir = 1;
         dynamicLine.gameObject.SetActive(true);
         canClick = true;
+
+        if (debugLog)
+            Debug.Log("[Cut] DynamicLine 已开启 | 层级激活=" + dynamicLine.gameObject.activeInHierarchy +
+                      " | 父级=" + (dynamicLine.parent != null ? dynamicLine.parent.name : "null") +
+                      " | pos=" + dynamicLine.anchoredPosition +
+                      " | size=" + dynamicLine.sizeDelta +
+                      " | timeScale=" + Time.timeScale, this);
     }
 
     void StopDynamicLine()
@@ -123,7 +157,8 @@ public class CutGameManager : MonoBehaviour
     // ======== 切菜入口 ========
     public void OnCutClick(Vector2 screenPos)
     {
-        Debug.Log($"[Cut] phase={CurrentPhase}, canClick={canClick}, veg={currentVeg}");
+        if (debugLog)
+            Debug.Log("[Cut] 收到点击 phase=" + CurrentPhase + ", canClick=" + canClick + ", veg=" + currentVeg);
 
         if (CurrentPhase != Phase.Cutting) return;
         if (!canClick || currentVeg == null || !currentVeg.IsOnBoard) return;
@@ -145,7 +180,7 @@ public class CutGameManager : MonoBehaviour
         return delta <= greatRange;
     }
 
-    // 是否可以点击下一个蔬菜：当前蔬菜未切完、碎片未全部入盘清空前都不可选
+    // 当前蔬菜未切完、碎片未全部入盘清空前都不可选
     public bool CanPickNextVeg()
     {
         return CurrentPhase == Phase.Idle && platingFlow == null;
@@ -154,7 +189,12 @@ public class CutGameManager : MonoBehaviour
     // ======== VegItem 调用：飞到菜板后 ========
     public void SetCurrentVeg(VegItem veg)
     {
-        // 如果还在切上一个（比如协程刚结束前），先清干净
+        if (veg == null)
+        {
+            Debug.LogError("[Cut] SetCurrentVeg 收到 null", this);
+            return;
+        }
+
         if (currentVeg != null && currentVeg != veg)
             currentVeg.gameObject.SetActive(false);
 
@@ -163,7 +203,7 @@ public class CutGameManager : MonoBehaviour
         expectedPieceCount = veg.targetCutCount;
         placedPieceCount = 0;
 
-        veg.LockLeftEdge();  // 记录落板左边缘，后续单边缩靠它
+        veg.LockLeftEdge();
 
         // 蔬菜落到菜板后关闭自身射线拦截
         Graphic g = veg.GetComponent<Graphic>();
@@ -172,7 +212,9 @@ public class CutGameManager : MonoBehaviour
         if (redLine != null) redLine.gameObject.SetActive(true);
         AlignVegUnderRedLine(veg);
         StartDynamicLine();
-        Debug.Log($"[{veg.name}] 进入 Phase.Cutting，目标 {expectedPieceCount} 刀");
+
+        if (debugLog)
+            Debug.Log("[" + veg.name + "] 进入 Phase.Cutting，目标 " + expectedPieceCount + " 刀", this);
     }
 
     void AlignVegUnderRedLine(VegItem veg)
@@ -204,7 +246,7 @@ public class CutGameManager : MonoBehaviour
 
             // 蔬菜切完后隐藏，碎片留在菜板上让玩家一个一个点
             currentVeg.gameObject.SetActive(false);
-            Debug.Log($"[{currentVeg.name}] 切完，进入 Phase.Plating，等玩家把 {expectedPieceCount} 块碎片入盘子");
+            Debug.Log("[" + currentVeg.name + "] 切完，进入 Phase.Plating，等玩家把 " + expectedPieceCount + " 块碎片入盘子");
         }
     }
 
@@ -241,9 +283,8 @@ public class CutGameManager : MonoBehaviour
     {
         placedPieceCount++;
         platePieceCount++;
-        Debug.Log($"[Plating] 碎片入盘 {placedPieceCount}/{expectedPieceCount}");
+        Debug.Log("[Plating] 碎片入盘 " + placedPieceCount + "/" + expectedPieceCount);
 
-        // 本蔬菜所有碎片都入盘了 → 直接 vegIndex++，不清盘不等待
         if (placedPieceCount >= expectedPieceCount && platingFlow == null)
         {
             platingFlow = StartCoroutine(PlateHoldThenAdvance());
@@ -252,33 +293,41 @@ public class CutGameManager : MonoBehaviour
 
     IEnumerator PlateHoldThenAdvance()
     {
-        // 不再等待盘子停留，也不清空碎片（碎片一直留在盘子上）
         platingFlow = null;
-
         vegIndex++;
 
-        if (vegIndex >= allVegs.Length)
+        int total = allVegs != null ? allVegs.Length : 0;
+        Debug.Log("[Game] 已完成第 " + vegIndex + "/" + total + " 个蔬菜");
+
+        if (total == 0 || vegIndex >= total)
         {
-            // 所有蔬菜切完 → 0.5 秒后出现起火标志
-            Debug.Log("[Game] 三个蔬菜全部切完，等待起火...");
+            // 所有蔬菜都切完并入盘 → 等待后显示起火标志
+            Debug.Log("[Game] 所有蔬菜处理完，等待 " + fireIconDelay + " 秒后显示起火标志");
             CurrentPhase = Phase.Idle;
             StartCoroutine(ShowFireIconAfterDelay());
         }
         else
         {
-            // 不等盘子，立刻可以点下一个蔬菜
             CurrentPhase = Phase.Idle;
-            Debug.Log($"[Game] 请点击下一个蔬菜（vegIndex={vegIndex}）");
+            Debug.Log("[Game] 请点击下一个蔬菜（" + vegIndex + "/" + total + "）");
         }
         yield break;
     }
 
     IEnumerator ShowFireIconAfterDelay()
     {
-        Debug.Log($"[Fire] 等待 {fireIconDelay} 秒后显示起火标志...");
+        Debug.Log("[Fire] 倒计时 " + fireIconDelay + " 秒...");
         yield return new WaitForSeconds(fireIconDelay);
-        if (fireIcon != null) fireIcon.SetActive(true);
-        Debug.Log("[Fire] 起火标志已显示，等待玩家点击");
+
+        if (fireIcon != null)
+        {
+            fireIcon.SetActive(true);
+            Debug.Log("[Fire] 起火标志已显示：" + fireIcon.name);
+        }
+        else
+        {
+            Debug.LogWarning("[Fire] fireIcon 未赋值，请把 Fire 拖到 CutGameManager 上");
+        }
     }
 
     // ======== 起火标志点击处理 ========
@@ -302,15 +351,11 @@ public class CutGameManager : MonoBehaviour
     {
         Debug.Log("[Fire] 起火标志被点击 → 播放火焰动画 + 显示校准条");
 
-        // 隐藏起火标志
         if (fireIcon != null) fireIcon.SetActive(false);
 
-        // 播放火焰帧动画（Animator 默认在 GameObject SetActive(true) 后自动从状态机播放）
+        // 播放火焰帧动画（SetActive(true) 后 Animator 自动从状态机播放）
         if (fireAnimation != null) fireAnimation.SetActive(true);
 
-        // 显示校准条 Canvas
-        // 注意：PotCalibrationGame 在 Canvas 首次 SetActive(true) 时会触发 Start()，
-        // 其 Start() 里已自动调用 BeginCalibration()，无需外部再调
         if (calibrationCanvas != null)
         {
             calibrationCanvas.SetActive(true);
@@ -370,7 +415,11 @@ public class CutGameManager : MonoBehaviour
             if (veg != null && veg.boardCenter != null)
                 boardArea = veg.boardCenter.parent as RectTransform;
         }
-        if (boardArea == null) return;
+        if (boardArea == null)
+        {
+            Debug.LogWarning("[Cut] boardArea 为空，切菜点击可能收不到", this);
+            return;
+        }
 
         Image img = boardArea.GetComponent<Image>();
         if (img == null)
@@ -404,5 +453,17 @@ public class CutGameManager : MonoBehaviour
     void HideFeedback()
     {
         if (feedbackPanel != null) feedbackPanel.SetActive(false);
+    }
+
+    // ======== 工具 ========
+    private static string GetPath(Transform t)
+    {
+        string p = t.name;
+        while (t.parent != null)
+        {
+            t = t.parent;
+            p = t.name + "/" + p;
+        }
+        return p;
     }
 }
