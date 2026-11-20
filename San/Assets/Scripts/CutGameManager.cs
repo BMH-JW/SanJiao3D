@@ -16,6 +16,16 @@ public class CutGameManager : MonoBehaviour
     public Text feedbackText;
     public RectTransform plateSlot;
 
+    [Header("反馈图片（Great / Miss）")]
+    [Tooltip("切得准的时候显示的图片（直接拖图片资源）")]
+    public Sprite greatFeedbackSprite;
+    [Tooltip("切偏时显示的图片（直接拖图片资源）")]
+    public Sprite missFeedbackSprite;
+    [Tooltip("用来显示反馈图的 UI Image；留空则在 Feedback Panel 里自动找一个")]
+    public Image feedbackImage;
+    [Tooltip("反馈显示多少秒后自动消失")]
+    public float feedbackShowSeconds = 0.7f;
+
     [Header("动态虚线")]
     public RectTransform dynamicLine;
     public float moveRange = 260f;
@@ -52,7 +62,6 @@ public class CutGameManager : MonoBehaviour
     private int vegIndex;                   // 当前是第几个蔬菜
     private int expectedPieceCount;         // 本蔬菜预期产生的碎片数
     private int placedPieceCount;           // 已归位盘子的碎片数
-    private int platePieceCount;            // 盘子总碎片数（跨蔬菜累加，用于排队）
 
     private int moveDir = 1;
     private bool canClick;
@@ -71,6 +80,7 @@ public class CutGameManager : MonoBehaviour
         plateHoldSeconds = 2f;
 
         if (feedbackPanel != null) feedbackPanel.SetActive(false);
+        if (feedbackImage != null) feedbackImage.gameObject.SetActive(false);
         if (redLine != null) redLine.gameObject.SetActive(forceShowRedLineNow);
         if (dynamicLine != null) dynamicLine.gameObject.SetActive(false);
 
@@ -261,6 +271,14 @@ public class CutGameManager : MonoBehaviour
         Transform parent = plateSlot != null ? plateSlot.parent : transform;
         GameObject go = Instantiate(slicePrefab, parent);
 
+        // 同一个碎片预制体，只按当前蔬菜换 Sprite（没配置就保留预制体自带的图）
+        Sprite sliceSprite = currentVeg != null ? currentVeg.GetSliceSprite() : null;
+        if (sliceSprite != null)
+        {
+            Image img = go.GetComponentInChildren<Image>(true);
+            if (img != null) img.sprite = sliceSprite;
+        }
+
         RectTransform rt = go.GetComponent<RectTransform>();
         if (rt != null)
         {
@@ -282,7 +300,6 @@ public class CutGameManager : MonoBehaviour
     public void NotifyPiecePlaced()
     {
         placedPieceCount++;
-        platePieceCount++;
         Debug.Log("[Plating] 碎片入盘 " + placedPieceCount + "/" + expectedPieceCount);
 
         if (placedPieceCount >= expectedPieceCount && platingFlow == null)
@@ -374,11 +391,10 @@ public class CutGameManager : MonoBehaviour
         for (int i = plateSlot.childCount - 1; i >= 0; i--)
             Destroy(plateSlot.GetChild(i).gameObject);
 
-        platePieceCount = 0;
         Debug.Log("[Plating] 盘子已清空");
     }
 
-    // ======== 盘子排位置（跨蔬菜累加） ========
+    // ======== 盘子里随机落点（限制在 plateSlot 框内） ========
     public Vector2 GetNextPlateLocalPos(RectTransform pieceRt)
     {
         if (plateSlot == null) return pieceRt.anchoredPosition;
@@ -389,21 +405,25 @@ public class CutGameManager : MonoBehaviour
 
         float pieceW = pieceRt.sizeDelta.x > 0 ? pieceRt.sizeDelta.x : 60f;
         float pieceH = pieceRt.sizeDelta.y > 0 ? pieceRt.sizeDelta.y : 60f;
-        float gap = 6f;
 
-        int perRow = Mathf.Max(1, Mathf.FloorToInt((plateSize.x + gap) / (pieceW + gap)));
-        int col = platePieceCount % perRow;
-        int row = platePieceCount / perRow;
+        // 按盘子自身的 pivot 换算框的四条边（碎片锚点、轴心都是中心）
+        Vector2 pivot = plateSlot.pivot;
+        float left = -pivot.x * plateSize.x;
+        float right = (1f - pivot.x) * plateSize.x;
+        float bottom = -pivot.y * plateSize.y;
+        float top = (1f - pivot.y) * plateSize.y;
 
-        float totalW = perRow * pieceW + (perRow - 1) * gap;
-        Vector2 pos;
-        pos.x = -totalW * 0.5f + pieceW * 0.5f + col * (pieceW + gap);
-        pos.y = plateSize.y * 0.5f - pieceH * 0.5f - row * (pieceH + gap);
+        // 内缩半个碎片，保证整块碎片都在框内
+        float minX = left + pieceW * 0.5f;
+        float maxX = right - pieceW * 0.5f;
+        float minY = bottom + pieceH * 0.5f;
+        float maxY = top - pieceH * 0.5f;
 
-        float bottomLimit = -plateSize.y * 0.5f + pieceH * 0.5f;
-        if (pos.y < bottomLimit) pos.y = bottomLimit;
+        // 碎片比盘子还大时放正中间
+        float x = minX <= maxX ? Random.Range(minX, maxX) : (left + right) * 0.5f;
+        float y = minY <= maxY ? Random.Range(minY, maxY) : (bottom + top) * 0.5f;
 
-        return pos + plateSlotOffset;
+        return new Vector2(x, y) + plateSlotOffset;
     }
 
     // ======== 其他 ========
@@ -436,16 +456,48 @@ public class CutGameManager : MonoBehaviour
 
     public void ShowFeedback(string msg)
     {
-        if (feedbackPanel != null) feedbackPanel.SetActive(true);
-        if (feedbackText != null) feedbackText.text = msg;
+        bool isGreat = msg.Contains("Great");
+        bool isMiss = msg.Contains("Miss");
+        Sprite sprite = isGreat ? greatFeedbackSprite : (isMiss ? missFeedbackSprite : null);
+
+        if (sprite != null)
+        {
+            if (feedbackImage == null) feedbackImage = FindFeedbackImage();
+
+            if (feedbackImage != null)
+            {
+                // 文字换成图片：Great / Miss 只换 Sprite
+                ActivateChain(feedbackImage.transform);
+                feedbackImage.sprite = sprite;
+                feedbackImage.gameObject.SetActive(true);
+
+                if (feedbackText != null && feedbackText.gameObject != feedbackImage.gameObject)
+                    feedbackText.gameObject.SetActive(false);
+            }
+            else
+            {
+                Debug.LogWarning("[Cut] 配了反馈图片，但找不到用来显示的 Image，请把 Feedback Image 拖到 CutGameManager 上", this);
+            }
+        }
+        else
+        {
+            // 没配图片时退回原来的文字反馈
+            if (feedbackPanel != null) feedbackPanel.SetActive(true);
+            if (feedbackText != null)
+            {
+                feedbackText.gameObject.SetActive(true);
+                feedbackText.text = msg;
+            }
+        }
+
         CancelInvoke(nameof(HideFeedback));
-        Invoke(nameof(HideFeedback), 0.7f);
+        Invoke(nameof(HideFeedback), Mathf.Max(0.01f, feedbackShowSeconds));
 
         if (sfxSource != null)
         {
-            if (msg.Contains("Great") && greatClip != null)
+            if (isGreat && greatClip != null)
                 sfxSource.PlayOneShot(greatClip);
-            else if (msg.Contains("Miss") && missClip != null)
+            else if (isMiss && missClip != null)
                 sfxSource.PlayOneShot(missClip);
         }
     }
@@ -453,6 +505,30 @@ public class CutGameManager : MonoBehaviour
     void HideFeedback()
     {
         if (feedbackPanel != null) feedbackPanel.SetActive(false);
+        if (feedbackImage != null) feedbackImage.gameObject.SetActive(false);
+    }
+
+    // Feedback Image 没拖时，在 Feedback Panel 下面找一个带图片的 Image
+    private Image FindFeedbackImage()
+    {
+        if (feedbackPanel == null) return null;
+
+        Image[] images = feedbackPanel.GetComponentsInChildren<Image>(true);
+        for (int i = 0; i < images.Length; i++)
+        {
+            if (images[i] != null && images[i].transform != feedbackPanel.transform)
+                return images[i];
+        }
+        return feedbackPanel.GetComponent<Image>();
+    }
+
+    private static void ActivateChain(Transform t)
+    {
+        while (t != null)
+        {
+            if (!t.gameObject.activeSelf) t.gameObject.SetActive(true);
+            t = t.parent;
+        }
     }
 
     // ======== 工具 ========

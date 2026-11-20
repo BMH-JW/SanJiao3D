@@ -3,33 +3,43 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// ¿ÉĞı×ª´ò¿ªµÄÈİÆ÷£¨³éÌë¡¢±ùÏäÃÅ¡¢¹ñÃÅµÈÍ³Ò»´¦Àí£©£º
-/// - Íæ¼Ò¿¿½üÊ±ÏÔÊ¾¡¸°´ E ´ò¿ª¡¹¡£
-/// - ´ò¿ªºóÌáÊ¾±ä³É¡¸°´ E ¹Ø±Õ¡¹£¬Ö»ÄÜ¹Ø±Õ¡£
-/// - ËùÓĞÈİÆ÷Í³Ò»ÓÃ 90¡ã Ğı×ª·½Ê½´ò¿ª¡£
+/// å¯æ—‹è½¬æ‰“å¼€çš„å®¹å™¨ï¼ˆæŠ½å±‰ã€å†°ç®±é—¨ã€æŸœé—¨ç­‰ç»Ÿä¸€å¤„ç†ï¼‰ï¼š
+/// - ç©å®¶é è¿‘æ—¶æ˜¾ç¤ºã€ŒæŒ‰ E æ‰“å¼€ã€ã€‚
+/// - æ‰“å¼€åæç¤ºå˜æˆã€ŒæŒ‰ E å…³é—­ã€ï¼Œåªèƒ½å…³é—­ã€‚
+/// - æ‰€æœ‰å®¹å™¨ç»Ÿä¸€ç”¨ 90Â° æ—‹è½¬æ–¹å¼æ‰“å¼€ã€‚
 ///
-/// ×¢Òâ£ºÒªÈÃĞı×ª¿´ÆğÀ´ÕıÈ·£¬movingPart£¨ÃÅ°å£©µÄ Pivot ±ØĞë·ÅÔÚÃÅµÄ²à±ß±ßÔµ£¬
-/// ÕâÑùĞı×ªÊ±²Å»áÏñÕæÊµÃÅÒ»ÑùÈÆ²à±ß´ò¿ª£¬¶ø²»ÊÇÈÆÖĞĞÄ×ª¡£
+/// æ³¨æ„ï¼šmovingPartï¼ˆé—¨æ¿ï¼‰é»˜è®¤ç»•å·¦è¾¹ç¼˜æ—‹è½¬ï¼Œä¸å†ä¾èµ– Pivot æ˜¯å¦æ‘†åœ¨è¾¹æ²¿ï¼›
+/// å¦‚æœæŸæ‰‡é—¨è¦ç»•å³è¾¹è½¬ï¼ŒæŠŠ Hinge Side æ”¹æˆ Right å³å¯ã€‚
 /// </summary>
 public class ContainerInteraction : MonoBehaviour
 {
-    [Header("ÔË¶¯²ÎÊı")]
-    [Tooltip("ÕæÕıĞı×ªµÄÃÅ°å Pivot£¨·ÅÔÚÃÅµÄ²à±ß±ßÔµ£©")]
+    [Header("è¿åŠ¨å‚æ•°")]
+    [Tooltip("çœŸæ­£æ—‹è½¬çš„é—¨æ¿ï¼Œé»˜è®¤ç»•å®ƒæ¸²æŸ“èŒƒå›´çš„å·¦è¾¹ç¼˜æ‰“å¼€")]
     public Transform movingPart;
-    [Tooltip("´ò¿ª½Ç¶È£¬Í³Ò» 90¡ã")]
+    [Tooltip("æ‰“å¼€è§’åº¦ï¼Œç»Ÿä¸€ 90Â°")]
     public float openAngle = 90f;
-    [Tooltip("¶¯»­ËÙ¶È")]
+    [Tooltip("åŠ¨ç”»é€Ÿåº¦")]
     public float animSpeed = 3f;
 
-    [Header("½»»¥")]
+    [Header("é“°é“¾ï¼ˆæ—‹è½¬è½´ï¼‰")]
+    [Tooltip("æŸœé—¨é»˜è®¤æ˜¯å·¦è¾¹ç¼˜ï¼›éœ€è¦æ—¶å¯æ”¹ Right / Center / Custom")]
+    public HingeSide hingeSide = HingeSide.Left;
+    [Tooltip("è‡ªå®šä¹‰è½´å¿ƒï¼ˆé—¨æ¿çš„æœ¬åœ°åæ ‡ï¼‰ï¼Œåªæœ‰ Hinge Side = Custom æ—¶ç”Ÿæ•ˆ")]
+    public Vector3 hingeOffset = Vector3.zero;
+
+    [Header("äº¤äº’")]
     public float interactRange = 2.5f;
-    [Tooltip("ÊÀ½ç¿Õ¼äÌáÊ¾ Canvas£¨º¬ Text£©")]
+    [Tooltip("ä¸–ç•Œç©ºé—´æç¤º Canvasï¼ˆå« Textï¼‰")]
     public GameObject promptCanvas;
     public Text promptText;
 
     private bool isOpen = false;
-    private float closedYRot;
     private Transform player;
+
+    private Vector3 baseWorldPos;
+    private Quaternion baseWorldRot;
+    private Vector3 hingeWorld;
+    private float currentAngle;
 
     void Start()
     {
@@ -39,9 +49,17 @@ public class ContainerInteraction : MonoBehaviour
         if (promptCanvas != null) promptCanvas.SetActive(false);
 
         if (movingPart != null)
-            closedYRot = movingPart.localEulerAngles.y;
+        {
+            baseWorldPos = movingPart.position;
+            baseWorldRot = movingPart.rotation;
+
+            Vector3 localHinge = HingeUtility.ResolveLocal(movingPart, hingeSide, hingeOffset);
+            hingeWorld = movingPart.TransformPoint(localHinge);
+        }
         else
-            Debug.LogWarning("[ContainerInteraction] " + gameObject.name + " µÄ movingPart Î´ÉèÖÃ£¡");
+        {
+            Debug.LogWarning("[ContainerInteraction] " + gameObject.name + " çš„ movingPart æœªè®¾ç½®ï¼");
+        }
     }
 
     void Update()
@@ -55,7 +73,7 @@ public class ContainerInteraction : MonoBehaviour
         {
             promptCanvas.SetActive(inRange);
             if (promptText != null)
-                promptText.text = isOpen ? "°´ E ¹Ø±Õ" : "°´ E ´ò¿ª";
+                promptText.text = isOpen ? "æŒ‰ E å…³é—­" : "æŒ‰ E æ‰“å¼€";
         }
 
         if (inRange && Input.GetKeyDown(KeyCode.E))
@@ -70,19 +88,22 @@ public class ContainerInteraction : MonoBehaviour
 
         isOpen = !isOpen;
         StopAllCoroutines();
-        StartCoroutine(AnimateRotate(isOpen ? closedYRot + openAngle : closedYRot));
+        StartCoroutine(AnimateRotate(isOpen ? openAngle : 0f));
     }
 
-    IEnumerator AnimateRotate(float targetY)
+    IEnumerator AnimateRotate(float targetAngle)
     {
-        float start = movingPart.localEulerAngles.y;
+        float start = currentAngle;
         float t = 0f;
         while (t < 1f)
         {
             t += Time.deltaTime * animSpeed;
-            movingPart.localRotation = Quaternion.Euler(0f, Mathf.Lerp(start, targetY, t), 0f);
+            currentAngle = Mathf.Lerp(start, targetAngle, t);
+            HingeUtility.Apply(movingPart, hingeWorld, baseWorldPos, baseWorldRot, currentAngle);
             yield return null;
         }
-        movingPart.localRotation = Quaternion.Euler(0f, targetY, 0f);
+
+        currentAngle = targetAngle;
+        HingeUtility.Apply(movingPart, hingeWorld, baseWorldPos, baseWorldRot, currentAngle);
     }
 }

@@ -113,7 +113,7 @@ public class HandleClick : MonoBehaviour
             }
 
             FridgeDoor fridge = hit.collider.GetComponentInParent<FridgeDoor>();
-            if (fridge != null)
+            if (fridge != null && fridge.isActiveAndEnabled)
             {
                 if (showDebugInfo) Debug.Log($"[HandleClick] 命中 {hit.collider.name} → {fridge.name} 开关");
                 fridge.Toggle();
@@ -161,6 +161,8 @@ public class HandleClick : MonoBehaviour
 
         foreach (FridgeDoor fridge in FindObjectsOfType<FridgeDoor>())
         {
+            // 被 DoorInteraction 接管后会自动停用，别再参与辅助点击
+            if (fridge == null || !fridge.isActiveAndEnabled) continue;
             if (!TryGetBounds(fridge.gameObject, null, out Bounds bounds)) continue;
             if (bounds.SqrDistance(camPos) > maxDistance * maxDistance) continue;
 

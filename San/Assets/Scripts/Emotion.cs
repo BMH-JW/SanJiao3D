@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.UI;
 
 /// <summary>
@@ -36,6 +37,19 @@ public class EmotionRewardFly : MonoBehaviour
 
     [Tooltip("碎碎念消失后，等待多久情绪球出场")]
     public float ballDelayAfterMumble = 0.4f;
+
+    [Header("2D 碎碎念弹窗（优先于 3D 气泡）")]
+    [Tooltip("弹窗容器，可留空；填了会在显示结束后一起关掉")]
+    public GameObject thinkPanel;
+
+    [Tooltip("成功时显示的文案物体（场景里写好文字，直接拖进来）")]
+    public GameObject happyThinkText;
+
+    [Tooltip("失败时显示的文案物体（场景里写好文字，直接拖进来）")]
+    public GameObject sadThinkText;
+
+    [Tooltip("只用一个 Text 切换文案时使用；上面两个文案槽位都不填才生效")]
+    public Text thinkLabel;
 
     [Header("情绪背包")]
     [Tooltip("HUD 上的情绪背包图标")]
@@ -116,10 +130,20 @@ public class EmotionRewardFly : MonoBehaviour
     [Tooltip("情绪球落袋后要震动的手机，留空自动找")]
     public PhoneQuest phoneQuest;
 
+    [Header("置顶渲染")]
+    [Tooltip("情绪球始终显示在所有 3D 物体前面，不会被墙/家具挡住")]
+    public bool alwaysRenderOnTop = true;
+
+    [Tooltip("置顶渲染专用层；不要和场景里其它物体共用（默认用空白的 31 层）")]
+    [Range(8, 31)]
+    public int overlayLayer = 31;
+
     public bool debugLog = true;
 
     private bool playing;
     private Camera cam;
+    private Camera overlayCam;
+    private Camera overlayStackCamera;   // 置顶相机当前叠在哪个主相机上
 
     // 已经落袋的小情绪球，每帧跟随当前相机重新定位
     private class LandedBall
@@ -164,6 +188,10 @@ public class EmotionRewardFly : MonoBehaviour
         yield return null;
         yield return null;
 
+        // ReturnTo3D 会关掉其它相机，这里把置顶相机重新打开
+        if (alwaysRenderOnTop && overlayCam != null)
+            overlayCam.enabled = true;
+
         // 2. 确定当前使用的相机
         cam = ResolveCamera();
 
@@ -181,16 +209,73 @@ public class EmotionRewardFly : MonoBehaviour
         if (backpackIcon != null && activateBackpackOnReturn)
             ActivateChain(backpackIcon);
 
-        // 4. 显示碎碎念
+        // 4. 显示碎碎念：优先用 2D 弹窗，没配才用 3D 气泡
+        bool useThinkTexts = happyThinkText != null || sadThinkText != null;
+        bool useThinkPanel = useThinkTexts || thinkPanel != null || thinkLabel != null;
         GameObject mumbleGO = mumbleRoot != null
             ? mumbleRoot
             : (mumbleAnchor != null
                 ? mumbleAnchor.gameObject
                 : null);
 
-        bool hasMumble = mumbleGO != null;
+        bool hasMumble = useThinkPanel || mumbleGO != null;
 
-        if (!hasMumble)
+        if (useThinkTexts)
+        {
+            // 两句话分别做成两个物体，成功/失败只切显隐，文案在场景里直接改
+            if (thinkPanel != null) ActivateChain(thinkPanel.transform);
+
+            if (happyThinkText != null)
+            {
+                ActivateChain(happyThinkText.transform);
+                happyThinkText.SetActive(happy);
+            }
+
+            if (sadThinkText != null)
+            {
+                ActivateChain(sadThinkText.transform);
+                sadThinkText.SetActive(!happy);
+            }
+
+            if (debugLog)
+            {
+                Debug.Log(
+                    "[Emotion] 2D 弹窗：" +
+                    (happy ? "成功文案" : "失败文案"),
+                    this);
+            }
+        }
+        else if (useThinkPanel)
+        {
+            // 单 Text 模式：直接改文字
+            Transform anchor = thinkPanel != null
+                ? thinkPanel.transform
+                : thinkLabel.transform;
+            ActivateChain(anchor);
+
+            if (thinkLabel == null && thinkPanel != null)
+                thinkLabel = thinkPanel.GetComponentInChildren<Text>(true);
+
+            if (thinkLabel != null)
+            {
+                thinkLabel.text = happy ? happyMumble : sadMumble;
+
+                if (debugLog)
+                {
+                    Debug.Log(
+                        "[Emotion] 2D 弹窗：" + thinkLabel.text +
+                        " | 物体=" + thinkLabel.name,
+                        thinkLabel);
+                }
+            }
+            else
+            {
+                Debug.LogWarning(
+                    "[Emotion] Think Panel 里没找到旧版 UI Text",
+                    thinkPanel);
+            }
+        }
+        else if (!hasMumble)
         {
             Debug.LogError(
                 "[Emotion] 没指定碎碎念物体，碎碎念不会显示",
@@ -239,9 +324,23 @@ public class EmotionRewardFly : MonoBehaviour
                 mumbleShowSeconds);
         }
 
-        if (hasMumble && controlMumbleVisibility)
+        if (hasMumble)
         {
-            mumbleGO.SetActive(false);
+            if (useThinkTexts)
+            {
+                if (happyThinkText != null) happyThinkText.SetActive(false);
+                if (sadThinkText != null) sadThinkText.SetActive(false);
+                if (thinkPanel != null) thinkPanel.SetActive(false);
+            }
+            else if (useThinkPanel)
+            {
+                if (thinkPanel != null) thinkPanel.SetActive(false);
+                else if (thinkLabel != null) thinkLabel.gameObject.SetActive(false);
+            }
+            else if (controlMumbleVisibility && mumbleGO != null)
+            {
+                mumbleGO.SetActive(false);
+            }
 
             if (debugLog)
                 Debug.Log("[Emotion] 碎碎念已消失");
@@ -276,6 +375,13 @@ public class EmotionRewardFly : MonoBehaviour
             : "EmotionBall_Sad";
 
         ball.SetActive(true);
+
+        // 置顶渲染：换到专用层，由叠加相机画在场景最前面
+        if (alwaysRenderOnTop)
+        {
+            EnsureOverlayCamera();
+            SetLayerRecursively(ball, overlayLayer);
+        }
 
         // 飞行球挂到相机下，飞行路径固定在屏幕上
         ball.transform.SetParent(cam.transform, true);
@@ -438,6 +544,8 @@ public class EmotionRewardFly : MonoBehaviour
 
     private void LateUpdate()
     {
+        SyncOverlayCamera();
+
         if (landedBalls.Count == 0) return;
 
         Camera activeCam = ActiveCamera();
@@ -528,20 +636,112 @@ public class EmotionRewardFly : MonoBehaviour
         }
     }
 
+    // ====================================================================
+    // 置顶渲染：用一个只画情绪球层的叠加相机，保证球不被任何物体挡住
+    // ====================================================================
+
+    private Camera EnsureOverlayCamera()
+    {
+        if (!alwaysRenderOnTop) return null;
+
+        if (overlayCam == null)
+        {
+            GameObject go = new GameObject("EmotionBall_OverlayCamera");
+            overlayCam = go.AddComponent<Camera>();
+            overlayCam.clearFlags = CameraClearFlags.Depth;
+            overlayCam.cullingMask = 1 << overlayLayer;
+            overlayCam.allowHDR = true;
+            overlayCam.allowMSAA = true;
+            overlayCam.enabled = true;
+
+            // URP：作为 Overlay 相机叠到主相机上，而不是独立出一张画面
+            UniversalAdditionalCameraData data =
+                overlayCam.GetUniversalAdditionalCameraData();
+            data.renderType = CameraRenderType.Overlay;
+            data.renderPostProcessing = false;
+
+            if (debugLog)
+                Debug.Log("[Emotion] 已创建置顶渲染相机，层=" + overlayLayer, overlayCam);
+        }
+
+        overlayCam.enabled = true;
+        return overlayCam;
+    }
+
+    private void SyncOverlayCamera()
+    {
+        if (overlayCam == null || !overlayCam.enabled) return;
+
+        Camera source = ActiveCamera();
+        if (source == null || source == overlayCam) return;
+
+        overlayCam.transform.SetPositionAndRotation(
+            source.transform.position,
+            source.transform.rotation);
+
+        overlayCam.orthographic = source.orthographic;
+        overlayCam.orthographicSize = source.orthographicSize;
+        overlayCam.fieldOfView = source.fieldOfView;
+        overlayCam.nearClipPlane = source.nearClipPlane;
+        overlayCam.farClipPlane = source.farClipPlane;
+        overlayCam.cullingMask = 1 << overlayLayer;
+
+        AttachOverlayTo(source);
+    }
+
+    // 把置顶相机挂到当前主相机的 URP 相机栈里
+    private void AttachOverlayTo(Camera source)
+    {
+        if (source == null || overlayCam == null) return;
+
+        if (overlayStackCamera != null && overlayStackCamera != source)
+        {
+            if (overlayStackCamera != overlayCam)
+            {
+                UniversalAdditionalCameraData oldData =
+                    overlayStackCamera.GetUniversalAdditionalCameraData();
+
+                if (oldData != null && oldData.cameraStack.Contains(overlayCam))
+                    oldData.cameraStack.Remove(overlayCam);
+            }
+        }
+
+        UniversalAdditionalCameraData sourceData =
+            source.GetUniversalAdditionalCameraData();
+
+        if (sourceData.renderType != CameraRenderType.Base)
+            sourceData.renderType = CameraRenderType.Base;
+
+        if (!sourceData.cameraStack.Contains(overlayCam))
+            sourceData.cameraStack.Add(overlayCam);
+
+        overlayStackCamera = source;
+    }
+
+    private static void SetLayerRecursively(GameObject go, int layer)
+    {
+        if (go == null) return;
+
+        Transform[] all = go.GetComponentsInChildren<Transform>(true);
+
+        for (int i = 0; i < all.Length; i++)
+            all[i].gameObject.layer = layer;
+    }
+
     // 当前真正在渲染的相机
     private Camera ActiveCamera()
     {
-        if (cam != null && cam.enabled)
+        if (cam != null && cam.isActiveAndEnabled && cam != overlayCam)
             return cam;
 
-        if (Camera.main != null && Camera.main.enabled)
+        if (Camera.main != null && Camera.main.isActiveAndEnabled && Camera.main != overlayCam)
             return Camera.main;
 
         Camera[] all = FindObjectsOfType<Camera>(true);
 
         for (int i = 0; i < all.Length; i++)
         {
-            if (all[i] != null && all[i].enabled)
+            if (all[i] != null && all[i].isActiveAndEnabled && all[i] != overlayCam)
                 return all[i];
         }
 
@@ -588,7 +788,7 @@ public class EmotionRewardFly : MonoBehaviour
         {
             Camera current = all[i];
 
-            if (current == null || current == target) continue;
+            if (current == null || current == target || current == overlayCam) continue;
 
             if (current.enabled)
                 current.enabled = false;
@@ -633,6 +833,12 @@ public class EmotionRewardFly : MonoBehaviour
             : "LandedEmotionBall_Sad";
 
         ball.SetActive(true);
+
+        if (alwaysRenderOnTop)
+        {
+            EnsureOverlayCamera();
+            SetLayerRecursively(ball, overlayLayer);
+        }
 
         // 关键：不再挂在相机下，否则换视角后就固定死了
         ball.transform.SetParent(null, true);
@@ -686,26 +892,38 @@ public class EmotionRewardFly : MonoBehaviour
 
     private Camera ResolveCamera()
     {
-        if (worldCamera != null)
+        if (worldCamera != null && worldCamera.isActiveAndEnabled)
             return worldCamera;
 
         if (taskHUD == null)
             taskHUD = FindObjectOfType<TaskHUD>(true);
 
         if (taskHUD != null &&
-            taskHUD.cameraOnReturn != null)
+            taskHUD.cameraOnReturn != null &&
+            taskHUD.cameraOnReturn.isActiveAndEnabled)
         {
             return taskHUD.cameraOnReturn;
         }
 
-        if (Camera.main != null)
+        if (Camera.main != null && Camera.main.isActiveAndEnabled)
             return Camera.main;
+
+        // 优先玩家身上的第一视角相机
+        PlayerMover pm = FindObjectOfType<PlayerMover>();
+
+        if (pm != null && pm.cameraTransform != null)
+        {
+            Camera fp = pm.cameraTransform.GetComponent<Camera>();
+
+            if (fp != null && fp.isActiveAndEnabled && fp != overlayCam)
+                return fp;
+        }
 
         Camera[] all = FindObjectsOfType<Camera>(true);
 
         for (int i = 0; i < all.Length; i++)
         {
-            if (all[i] != null && all[i].enabled)
+            if (all[i] != null && all[i].isActiveAndEnabled && all[i] != overlayCam)
                 return all[i];
         }
 

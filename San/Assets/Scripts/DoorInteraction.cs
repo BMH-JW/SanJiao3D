@@ -3,6 +3,81 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
+/// <summary>铰链位置：左边缘 / 右边缘 / 门体中心 / 自定义偏移。</summary>
+public enum HingeSide { Left, Right, Center, Custom }
+
+/// <summary>计算旋转轴，并绕轴心旋转门体（门和冰箱共用）。</summary>
+public static class HingeUtility
+{
+    /// <summary>返回铰链点在门体本地坐标里的位置。</summary>
+    public static Vector3 ResolveLocal(Transform pivot, HingeSide side, Vector3 custom)
+    {
+        if (pivot == null) return Vector3.zero;
+        if (side == HingeSide.Center) return Vector3.zero;
+        if (side == HingeSide.Custom) return custom;
+
+        int dir = side == HingeSide.Left ? -1 : 1;
+        return EdgeLocal(pivot, dir);
+    }
+
+    /// <summary>取门体渲染范围在本地坐标里的最左（dir=-1）或最右（dir=1）边缘中点。</summary>
+    public static Vector3 EdgeLocal(Transform pivot, int dir)
+    {
+        Renderer[] renderers = pivot.GetComponentsInChildren<Renderer>();
+        bool has = false;
+        Vector3 min = Vector3.zero;
+        Vector3 max = Vector3.zero;
+
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            Renderer r = renderers[i];
+            if (r == null) continue;
+
+            Bounds b = r.localBounds;
+            Vector3 c = b.center;
+            Vector3 e = b.extents;
+            Matrix4x4 toLocal = pivot.worldToLocalMatrix * r.transform.localToWorldMatrix;
+
+            for (int k = 0; k < 8; k++)
+            {
+                Vector3 corner = c + new Vector3(
+                    (k & 1) == 0 ? -e.x : e.x,
+                    (k & 2) == 0 ? -e.y : e.y,
+                    (k & 4) == 0 ? -e.z : e.z);
+
+                Vector3 local = toLocal.MultiplyPoint3x4(corner);
+                if (!has)
+                {
+                    min = local;
+                    max = local;
+                    has = true;
+                }
+                else
+                {
+                    min = Vector3.Min(min, local);
+                    max = Vector3.Max(max, local);
+                }
+            }
+        }
+
+        if (!has) return Vector3.zero;
+
+        float x = dir < 0 ? min.x : max.x;
+        return new Vector3(x, (min.y + max.y) * 0.5f, (min.z + max.z) * 0.5f);
+    }
+
+    /// <summary>绕铰链点旋转：门体原点相对铰链的偏移跟着一起转，铰链点保持不动。</summary>
+    public static void Apply(Transform pivot, Vector3 hingeWorld, Vector3 baseWorldPos,
+                             Quaternion baseWorldRot, float angle)
+    {
+        if (pivot == null) return;
+
+        Quaternion delta = Quaternion.Euler(0f, angle, 0f);
+        pivot.rotation = delta * baseWorldRot;
+        pivot.position = hingeWorld + delta * (baseWorldPos - hingeWorld);
+    }
+}
+
 /// <summary>
 /// 通用开关门脚本（门 / 抽屉 / 冰箱都能用）：
 /// 1. 靠近 → 显示开门按钮（没拖 Proximity Trigger 就不弹）；
@@ -17,6 +92,12 @@ public class DoorInteraction : MonoBehaviour
     public float openSpeed = 120f;
     [Tooltip("关门时阻挡玩家的碰撞体，开门后禁用。抽屉/冰箱可留空")]
     public Collider doorBlocker;
+
+    [Header("铰链（旋转轴）")]
+    [Tooltip("门轴位置：厨房门 / 柜子门选 Left，冰箱门选 Right；需要时可换成 Custom")]
+    public HingeSide hingeSide = HingeSide.Left;
+    [Tooltip("自定义轴心（门的本地坐标），只有 Hinge Side = Custom 时生效")]
+    public Vector3 hingeOffset = Vector3.zero;
 
     [Header("开门按钮 UI（WorldSpace Canvas）")]
     public GameObject openButtonCanvas;
@@ -60,6 +141,11 @@ public class DoorInteraction : MonoBehaviour
     private Transform player;
     private string resolvedKey;
 
+    // 绕边缘旋转用：门初始的世界位置 / 朝向 / 铰链世界坐标
+    private Vector3 baseWorldPos;
+    private Quaternion baseWorldRot;
+    private Vector3 hingeWorld;
+
     public bool StoryFinished { get; private set; }
     public bool IsOpen { get { return isOpen; } }
 
@@ -98,6 +184,7 @@ public class DoorInteraction : MonoBehaviour
             entryStory = FindObjectOfType<DoorEntrySequence>();
 
         ResolvePlayer();
+        CaptureHinge();
     }
 
     private void Update()
@@ -237,8 +324,7 @@ public class DoorInteraction : MonoBehaviour
         if (!isMoving) return;
 
         currentAngle = Mathf.MoveTowards(currentAngle, targetAngle, openSpeed * Time.deltaTime);
-        if (doorPivot != null)
-            doorPivot.localRotation = Quaternion.Euler(0f, currentAngle, 0f);
+        ApplyAngle(currentAngle);
 
         if (Mathf.Abs(currentAngle - targetAngle) < 0.01f)
         {
@@ -272,6 +358,24 @@ public class DoorInteraction : MonoBehaviour
         targetAngle = 0f;
 
         if (doorBlocker != null) doorBlocker.enabled = true;
+    }
+
+    /// <summary>记录初始位置，并按配置算出铰链点（世界坐标）。</summary>
+    private void CaptureHinge()
+    {
+        if (doorPivot == null) return;
+
+        baseWorldPos = doorPivot.position;
+        baseWorldRot = doorPivot.rotation;
+
+        Vector3 localHinge = HingeUtility.ResolveLocal(doorPivot, hingeSide, hingeOffset);
+        hingeWorld = doorPivot.TransformPoint(localHinge);
+    }
+
+    /// <summary>绕铰链点旋转门体（左边缘 / 右边缘 / 中心 / 自定义）。</summary>
+    private void ApplyAngle(float angle)
+    {
+        HingeUtility.Apply(doorPivot, hingeWorld, baseWorldPos, baseWorldRot, angle);
     }
 
     private static bool Inside(Collider trigger, Vector3 point)

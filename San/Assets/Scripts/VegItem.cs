@@ -17,6 +17,10 @@ public class VegItem : MonoBehaviour, IPointerClickHandler
     public int targetCutCount = 3;
     public float finishRatio = 0.2f;
 
+    [Header("碎片图片")]
+    [Tooltip("这种菜切出来的碎片图片；可按刀序放多张（第一刀、第二刀……），留空则用碎片预制体自带的图")]
+    public Sprite[] sliceSprites;
+
     public bool IsOnBoard { get; private set; }
     public bool IsCutDone { get; private set; }
     public int CurrentCutCount { get; private set; }
@@ -157,6 +161,15 @@ public class VegItem : MonoBehaviour, IPointerClickHandler
     public void LockLeftEdge()
     {
         fixedLeftEdgeLocal = rt.anchoredPosition.x - rt.sizeDelta.x * 0.5f;
+    }
+
+    /// <summary>取当前这一刀要用的碎片图片；没配置返回 null（用预制体自带的图）。</summary>
+    public Sprite GetSliceSprite()
+    {
+        if (sliceSprites == null || sliceSprites.Length == 0) return null;
+
+        int index = Mathf.Max(0, CurrentCutCount - 1);
+        return sliceSprites[index % sliceSprites.Length];
     }
 
     public bool CutOnce()
