@@ -29,6 +29,8 @@ public class VegItem : MonoBehaviour, IPointerClickHandler
     private CutGameManager manager;
     private Coroutine flyCoroutine;
     private Graphic vegGraphic;
+    private Image vegImage;
+    private bool useImageFill;
     private float fixedLeftEdgeLocal;
 
     void Awake()
@@ -39,6 +41,17 @@ public class VegItem : MonoBehaviour, IPointerClickHandler
         originalParent = rt.parent;
         vegGraphic = GetComponent<Graphic>();
         manager = ResolveManager();
+
+        // 用 Filled 模式裁掉一部分贴图，切一刀就少一截，而不是把整张图压扁
+        vegImage = GetComponent<Image>();
+        if (vegImage != null && vegImage.sprite != null)
+        {
+            vegImage.type = Image.Type.Filled;
+            vegImage.fillMethod = Image.FillMethod.Horizontal;
+            vegImage.fillOrigin = (int)Image.OriginHorizontal.Left;
+            vegImage.fillAmount = 1f;
+            useImageFill = true;
+        }
     }
 
     // 先找激活的，再找未激活的并自动激活
@@ -153,13 +166,22 @@ public class VegItem : MonoBehaviour, IPointerClickHandler
         float perCut = totalShrink / Mathf.Max(1, targetCutCount);
         CurrentRatio = Mathf.Clamp01(1f - CurrentCutCount * perCut);
 
-        float newWidth = baseSize.x * CurrentRatio;
-        rt.sizeDelta = new Vector2(newWidth, baseSize.y);
-        rt.anchoredPosition = new Vector2(fixedLeftEdgeLocal + newWidth * 0.5f, rt.anchoredPosition.y);
+        if (useImageFill)
+        {
+            // 左端固定，右边一截一截消失，贴图本身不拉伸
+            vegImage.fillAmount = CurrentRatio;
+        }
+        else
+        {
+            // 没有 Image 时的兜底：只能改宽度
+            float newWidth = baseSize.x * CurrentRatio;
+            rt.sizeDelta = new Vector2(newWidth, baseSize.y);
+            rt.anchoredPosition = new Vector2(fixedLeftEdgeLocal + newWidth * 0.5f, rt.anchoredPosition.y);
+        }
 
         IsCutDone = CurrentCutCount >= targetCutCount;
         Debug.Log("[" + name + "] 切第 " + CurrentCutCount + "/" + targetCutCount +
-                  " 刀，剩余 " + CurrentRatio.ToString("F2") + "，宽 " + newWidth.ToString("F1") +
+                  " 刀，剩余 " + CurrentRatio.ToString("F2") +
                   "，切完=" + IsCutDone);
         return !IsCutDone;
     }
@@ -173,6 +195,7 @@ public class VegItem : MonoBehaviour, IPointerClickHandler
         IsCutDone = false;
         IsOnBoard = false;
         rt.sizeDelta = baseSize;
+        if (useImageFill) vegImage.fillAmount = 1f;
 
         if (originalParent != null)
             rt.SetParent(originalParent, false);

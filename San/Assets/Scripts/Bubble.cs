@@ -2,42 +2,42 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// ¸úËæÍæ¼ÒµÄÊÀ½ç¿Õ¼äËéËéÄîÆøÅİ£ºÆ½»¬¸úËæ + Ê¼ÖÕÃæÏòÏà»ú + ¶¨Ê±×Ô¶¯Òş²Ø¡£
+/// è·Ÿéšç©å®¶çš„ä¸–ç•Œç©ºé—´ç¢ç¢å¿µæ°”æ³¡ï¼šå¹³æ»‘è·Ÿéš + å§‹ç»ˆé¢å‘ç›¸æœº + å®šæ—¶è‡ªåŠ¨éšè—ã€‚
 /// </summary>
 public class MumbleFollower : MonoBehaviour
 {
-    [Header("¸úËæ")]
-    [Tooltip("Íæ¼ÒÎïÌå£¬Áô¿Õ×Ô¶¯ÕÒ PlayerMover£»»¹ÕÒ²»µ½¾ÍÍË»¯Îª¸úËæÏà»ú")]
+    [Header("è·Ÿéš")]
+    [Tooltip("ç©å®¶ç‰©ä½“ï¼Œç•™ç©ºè‡ªåŠ¨æ‰¾ PlayerMoverï¼›è¿˜æ‰¾ä¸åˆ°å°±é€€åŒ–ä¸ºè·Ÿéšç›¸æœº")]
     public Transform target;
 
-    [Tooltip("¹´Ñ¡ºóÏà¶ÔÏà»úÆ«ÒÆ£¬±£Ö¤Ò»¶¨ÔÚÊÓÒ°Àï£»È¡Ïûºó°´Íæ¼ÒÍ·¶¥Æ«ÒÆ")]
+    [Tooltip("å‹¾é€‰åç›¸å¯¹ç›¸æœºåç§»ï¼Œä¿è¯ä¸€å®šåœ¨è§†é‡é‡Œï¼›å–æ¶ˆåæŒ‰ç©å®¶å¤´é¡¶åç§»")]
     public bool relativeToCamera = true;
 
-    [Tooltip("Ïà¶ÔÏà»ú£ºX ÓÒ¡¢Y ÉÏ¡¢Z Ç°£¨Ã×£©¡£Z Ô½Ğ¡Ô½ÌùÁ³")]
+    [Tooltip("ç›¸å¯¹ç›¸æœºï¼šX å³ã€Y ä¸Šã€Z å‰ï¼ˆç±³ï¼‰ã€‚Z è¶Šå°è¶Šè´´è„¸")]
     public Vector3 cameraOffset = new Vector3(0.32f, -0.08f, 0.9f);
 
-    [Tooltip("Ïà¶ÔÍæ¼Ò£ºÊÀ½ç¿Õ¼äÆ«ÒÆ")]
+    [Tooltip("ç›¸å¯¹ç©å®¶ï¼šä¸–ç•Œç©ºé—´åç§»")]
     public Vector3 worldOffset = new Vector3(0.25f, 1.55f, 0f);
 
-    [Tooltip("¸úËæÆ½»¬ËÙ¶È£¬Ô½´óÔ½¸úÊÖ")]
+    [Tooltip("è·Ÿéšå¹³æ»‘é€Ÿåº¦ï¼Œè¶Šå¤§è¶Šè·Ÿæ‰‹")]
     public float followLerp = 10f;
 
-    [Tooltip("½Å±¾ÆôÓÃÊ±Ö±½ÓÌùµ½Î»£¬²»´ÓÔ¶´¦·É¹ıÀ´")]
+    [Tooltip("è„šæœ¬å¯ç”¨æ—¶ç›´æ¥è´´åˆ°ä½ï¼Œä¸ä»è¿œå¤„é£è¿‡æ¥")]
     public bool snapOnEnable = true;
 
-    [Tooltip("µ±Ç°ÆøÅİºÍÄ¿±ê²î³¬¹ıÕâ¸ö¾àÀë¾ÍÖ±½ÓË²ÒÆ£¬±ÜÃâ´ÓºÜÔ¶ÂıÂıÆ®")]
+    [Tooltip("å½“å‰æ°”æ³¡å’Œç›®æ ‡å·®è¶…è¿‡è¿™ä¸ªè·ç¦»å°±ç›´æ¥ç¬ç§»ï¼Œé¿å…ä»å¾ˆè¿œæ…¢æ…¢é£˜")]
     public float snapDistance = 2.5f;
 
-    [Header("³¯Ïò")]
+    [Header("æœå‘")]
     public Camera viewCamera;
 
-    [Tooltip("Ö»ÈÆ Y Öá×ªÏòÏà»ú£¬ÎÄ×ÖÓÀÔ¶±£³ÖÊúÖ±")]
+    [Tooltip("åªç»• Y è½´è½¬å‘ç›¸æœºï¼Œæ–‡å­—æ°¸è¿œä¿æŒç«–ç›´")]
     public bool uprightOnly = true;
 
-    [Header("ÏÔÊ¾")]
+    [Header("æ˜¾ç¤º")]
     public Text label;
 
-    [Tooltip("Say ²»´«Ê±³¤Ê±£¬Ä¬ÈÏÏÔÊ¾¶à¾Ã")]
+    [Tooltip("Say ä¸ä¼ æ—¶é•¿æ—¶ï¼Œé»˜è®¤æ˜¾ç¤ºå¤šä¹…")]
     public float defaultDuration = 3f;
 
     public bool debugLog = true;
@@ -52,7 +52,7 @@ public class MumbleFollower : MonoBehaviour
 
         if (label == null) label = GetComponentInChildren<Text>(true);
 
-        if (label == null) Debug.LogWarning("[Mumble] Ã»ÕÒµ½ Text£¬ÇëÊÖ¶¯ÍÏ Label", this);
+        if (label == null) Debug.LogWarning("[Mumble] æ²¡æ‰¾åˆ° Textï¼Œè¯·æ‰‹åŠ¨æ‹– Label", this);
     }
 
     void OnEnable()
@@ -64,21 +64,26 @@ public class MumbleFollower : MonoBehaviour
 
         if (debugLog)
         {
-            Debug.Log("[Mumble] ÒÑÏÔÊ¾" +
-                      " | Ä¿±ê=" + (target != null ? target.name : "¿Õ") +
-                      " | Ïà»ú=" + (viewCamera != null ? viewCamera.name : "¿Õ") +
-                      " | ÊÀ½çÎ»ÖÃ=" + transform.position +
-                      " | Ïà¶ÔÏà»ú=" + relativeToCamera, this);
+            Debug.Log("[Mumble] å·²æ˜¾ç¤º" +
+                      " | ç›®æ ‡=" + (target != null ? target.name : "ç©º") +
+                      " | ç›¸æœº=" + (viewCamera != null ? viewCamera.name : "ç©º") +
+                      " | ä¸–ç•Œä½ç½®=" + transform.position +
+                      " | ç›¸å¯¹ç›¸æœº=" + relativeToCamera, this);
         }
     }
 
     void LateUpdate()
     {
         if (target == null) ResolveTargetAndCamera();
-        if (viewCamera == null) ResolveViewCamera();
+        // è¿‡åœºç›¸æœºï¼ˆthirdcamreï¼‰ä¼šä¸€ç›´ç•™åœ¨åœºæ™¯é‡Œï¼Œä½†å®ƒå…³æ‰åå°±ä¸èƒ½å†ä½œä¸ºæœå‘/åç§»çš„å‚è€ƒ
+        if (viewCamera == null || !viewCamera.isActiveAndEnabled)
+        {
+            viewCamera = null;
+            ResolveViewCamera();
+        }
         if (target == null) return;
 
-        // 1. ¸úËæ£º²îÌ«Ô¶Ö±½ÓË²ÒÆ£¬·ñÔòÆ½»¬¿¿½ü
+        // 1. è·Ÿéšï¼šå·®å¤ªè¿œç›´æ¥ç¬ç§»ï¼Œå¦åˆ™å¹³æ»‘é è¿‘
         Vector3 desired = DesiredPosition();
 
         if ((transform.position - desired).sqrMagnitude > snapDistance * snapDistance)
@@ -91,10 +96,10 @@ public class MumbleFollower : MonoBehaviour
             transform.position = Vector3.Lerp(transform.position, desired, k);
         }
 
-        // 2. ÃæÏòÏà»ú
+        // 2. é¢å‘ç›¸æœº
         FaceCamera();
 
-        // 3. ×Ô¶¯Òş²Ø
+        // 3. è‡ªåŠ¨éšè—
         if (autoHiding && Time.unscaledTime >= hideAtUnscaled)
         {
             autoHiding = false;
@@ -104,7 +109,7 @@ public class MumbleFollower : MonoBehaviour
 
     // ====================================================================
 
-    /// <summary>ÏÔÊ¾Ò»¾äËéËéÄî£»duration &lt; 0 ÓÃ defaultDuration£¬duration = 0 Ò»Ö±ÏÔÊ¾¡£</summary>
+    /// <summary>æ˜¾ç¤ºä¸€å¥ç¢ç¢å¿µï¼›duration &lt; 0 ç”¨ defaultDurationï¼Œduration = 0 ä¸€ç›´æ˜¾ç¤ºã€‚</summary>
     public void Say(string text, float duration = -1f)
     {
         if (label == null) label = GetComponentInChildren<Text>(true);
@@ -116,9 +121,9 @@ public class MumbleFollower : MonoBehaviour
         if (snapOnEnable) SnapNow();
 
         if (debugLog)
-            Debug.Log("[Mumble] Say£º" + text +
-                      " | Ä¿±ê=" + (target != null ? target.name : "¿Õ") +
-                      " | ÊÀ½çÎ»ÖÃ=" + transform.position, this);
+            Debug.Log("[Mumble] Sayï¼š" + text +
+                      " | ç›®æ ‡=" + (target != null ? target.name : "ç©º") +
+                      " | ä¸–ç•Œä½ç½®=" + transform.position, this);
 
         if (duration < 0f) duration = defaultDuration;
 
@@ -145,7 +150,7 @@ public class MumbleFollower : MonoBehaviour
     {
         ResolveViewCamera();
 
-        // ÓÅÏÈÓÃÍæ¼ÒµÚÒ»ÈË³ÆÏà»úµÄÎ»ÖÃ£¬Æä´ÎÓÃÍæ¼Ò±¾Ìå
+        // ä¼˜å…ˆç”¨ç©å®¶ç¬¬ä¸€äººç§°ç›¸æœºçš„ä½ç½®ï¼Œå…¶æ¬¡ç”¨ç©å®¶æœ¬ä½“
         if (target == null)
         {
             PlayerMover pm = FindObjectOfType<PlayerMover>();
@@ -153,27 +158,29 @@ public class MumbleFollower : MonoBehaviour
                 target = pm.cameraTransform != null ? pm.cameraTransform : pm.transform;
         }
 
-        // ÊµÔÚÕÒ²»µ½Íæ¼Ò£¬¾Í¸ú×ÅÏà»ú£¬±£Ö¤ÆøÅİÒ»Ö±ÔÚÊÓÒ°Àï
+        // å®åœ¨æ‰¾ä¸åˆ°ç©å®¶ï¼Œå°±è·Ÿç€ç›¸æœºï¼Œä¿è¯æ°”æ³¡ä¸€ç›´åœ¨è§†é‡é‡Œ
         if (target == null && viewCamera != null)
         {
             target = viewCamera.transform;
             if (!warnedNoTarget)
             {
                 warnedNoTarget = true;
-                Debug.LogWarning("[Mumble] ³¡¾°ÀïÃ»ÕÒµ½ PlayerMover£¬ÆøÅİ¸ÄÎª¸úËæÏà»ú", this);
+                Debug.LogWarning("[Mumble] åœºæ™¯é‡Œæ²¡æ‰¾åˆ° PlayerMoverï¼Œæ°”æ³¡æ”¹ä¸ºè·Ÿéšç›¸æœº", this);
             }
         }
 
         if (target == null && !warnedNoTarget)
         {
             warnedNoTarget = true;
-            Debug.LogWarning("[Mumble] ÕÒ²»µ½Íæ¼ÒÒ²ÕÒ²»µ½Ïà»ú£¬ÇëÊÖ¶¯°ÑÍæ¼ÒÍÏµ½ Target", this);
+            Debug.LogWarning("[Mumble] æ‰¾ä¸åˆ°ç©å®¶ä¹Ÿæ‰¾ä¸åˆ°ç›¸æœºï¼Œè¯·æ‰‹åŠ¨æŠŠç©å®¶æ‹–åˆ° Target", this);
         }
     }
 
     private Camera ResolveViewCamera()
     {
-        if (viewCamera != null) return viewCamera;
+        // åœºæ™¯é‡Œåºåˆ—åŒ–çš„å¯èƒ½æ˜¯è¿‡åœºç”¨çš„å›ºå®šç›¸æœºï¼Œå®ƒå·²ç»å…³é—­æ—¶ä¸èƒ½ç”¨ï¼Œå¦åˆ™æ°”æ³¡ä¼šé’‰åœ¨é—¨å£
+        if (viewCamera != null && viewCamera.isActiveAndEnabled) return viewCamera;
+        viewCamera = null;
 
         PlayerMover pm = FindObjectOfType<PlayerMover>();
         if (pm != null && pm.cameraTransform != null)
@@ -186,15 +193,30 @@ public class MumbleFollower : MonoBehaviour
             }
         }
 
-        viewCamera = Camera.main;
-        return viewCamera;
+        if (Camera.main != null)
+        {
+            viewCamera = Camera.main;
+            return viewCamera;
+        }
+
+        Camera[] all = FindObjectsOfType<Camera>(true);
+        for (int i = 0; i < all.Length; i++)
+        {
+            if (all[i] != null && all[i].isActiveAndEnabled)
+            {
+                viewCamera = all[i];
+                return viewCamera;
+            }
+        }
+
+        return null;
     }
 
     private Vector3 DesiredPosition()
     {
         if (target == null) return transform.position;
 
-        // Ä¿±ê±¾Éí¾ÍÊÇÏà»úÊ±£¬Ç¿ÖÆ°´Ïà»úÆ«ÒÆËã
+        // ç›®æ ‡æœ¬èº«å°±æ˜¯ç›¸æœºæ—¶ï¼Œå¼ºåˆ¶æŒ‰ç›¸æœºåç§»ç®—
         bool useCamera = relativeToCamera ||
                          (viewCamera != null && target == viewCamera.transform);
 

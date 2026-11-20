@@ -3,104 +3,104 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Ğ£×¼½á¹û ¡ú ËéËéÄî ¡ú 3D ÇéĞ÷Çò·ÉĞĞ ¡ú Âä´üÏú»Ù ¡ú ±³°üÅÔ±ß³öÏÖÒ»¸öĞ¡µÄ 3D ÇéĞ÷Çò
-/// ÂÌÉ«£¨³É¹¦£©£ºÎÒÕæÊÇÌ«°ôÁË / ¿ªĞÄÇò
-/// ºìÉ«£¨Ê§°Ü£©£º½ñÌìÕæÊÇ²»ĞÒ / Ê§ÍûÇò
+/// æ ¡å‡†ç»“æœ â†’ ç¢ç¢å¿µ â†’ 3D æƒ…ç»ªçƒé£è¡Œ â†’ è½è¢‹é”€æ¯ â†’ èƒŒåŒ…æ—è¾¹å‡ºç°ä¸€ä¸ªå°çš„ 3D æƒ…ç»ªçƒ
+/// ç»¿è‰²ï¼ˆæˆåŠŸï¼‰ï¼šæˆ‘çœŸæ˜¯å¤ªæ£’äº† / å¼€å¿ƒçƒ
+/// çº¢è‰²ï¼ˆå¤±è´¥ï¼‰ï¼šä»Šå¤©çœŸæ˜¯ä¸å¹¸ / å¤±æœ›çƒ
 /// </summary>
 public class EmotionRewardFly : MonoBehaviour
 {
-    [Header("ÇéĞ÷ÇòÔ¤ÖÆÌå£¨3D ÌØĞ§£©")]
+    [Header("æƒ…ç»ªçƒé¢„åˆ¶ä½“ï¼ˆ3D ç‰¹æ•ˆï¼‰")]
     public GameObject happyBallPrefab;
     public GameObject sadBallPrefab;
 
-    [Header("ÎÄ×Ö")]
-    public string happyMumble = "ÎÒÕæÊÇÌ«°ôÁË";
-    public string sadMumble = "½ñÌìÕæÊÇ²»ĞÒ";
+    [Header("æ–‡å­—")]
+    public string happyMumble = "æˆ‘çœŸæ˜¯å¤ªæ£’äº†";
+    public string sadMumble = "ä»Šå¤©çœŸæ˜¯ä¸å¹¸";
 
-    [Header("ËéËéÄî")]
-    [Tooltip("ËéËéÄîÆøÅİ / ÎÄ×ÖËùÔÚµÄÎïÌå£¬ÇéĞ÷Çò´ÓÕâÀï·É³ö")]
+    [Header("ç¢ç¢å¿µ")]
+    [Tooltip("ç¢ç¢å¿µæ°”æ³¡ / æ–‡å­—æ‰€åœ¨çš„ç‰©ä½“ï¼Œæƒ…ç»ªçƒä»è¿™é‡Œé£å‡º")]
     public Transform mumbleAnchor;
 
-    [Tooltip("ÆøÅİÀïµÄ Text£¬¿ÉÁô¿Õ×Ô¶¯ÕÒ£»TextMeshPro ²»Ö§³ÖÕâ¸ö×Ö¶Î")]
+    [Tooltip("æ°”æ³¡é‡Œçš„ Textï¼Œå¯ç•™ç©ºè‡ªåŠ¨æ‰¾ï¼›TextMeshPro ä¸æ”¯æŒè¿™ä¸ªå­—æ®µ")]
     public Text mumbleLabel;
 
-    [Tooltip("ÆøÅİ¸ùÎïÌå£¬Áô¿ÕÔòÓÃ Mumble Anchor ËùÔÚµÄÎïÌå")]
+    [Tooltip("æ°”æ³¡æ ¹ç‰©ä½“ï¼Œç•™ç©ºåˆ™ç”¨ Mumble Anchor æ‰€åœ¨çš„ç‰©ä½“")]
     public GameObject mumbleRoot;
 
-    [Tooltip("ÊÇ·ñÓÉ±¾½Å±¾¿ØÖÆÆøÅİµÄÏÔÊ¾ / Òş²Ø")]
+    [Tooltip("æ˜¯å¦ç”±æœ¬è„šæœ¬æ§åˆ¶æ°”æ³¡çš„æ˜¾ç¤º / éšè—")]
     public bool controlMumbleVisibility = true;
 
-    [Tooltip("ËéËéÄîÏÔÊ¾¶à¾Ã£¨Ãë£©ºóÏûÊ§£¬ÏûÊ§ºóÇéĞ÷Çò²Å³ö³¡")]
+    [Tooltip("ç¢ç¢å¿µæ˜¾ç¤ºå¤šä¹…ï¼ˆç§’ï¼‰åæ¶ˆå¤±ï¼Œæ¶ˆå¤±åæƒ…ç»ªçƒæ‰å‡ºåœº")]
     public float mumbleShowSeconds = 5f;
 
-    [Tooltip("ËéËéÄîÏûÊ§ºó£¬µÈ¶à¾ÃÇéĞ÷Çò³ö³¡")]
+    [Tooltip("ç¢ç¢å¿µæ¶ˆå¤±åï¼Œç­‰å¤šä¹…æƒ…ç»ªçƒå‡ºåœº")]
     public float ballDelayAfterMumble = 0.4f;
 
-    [Header("ÇéĞ÷±³°ü")]
-    [Tooltip("ÇéĞ÷±³°üÍ¼±ê£¨ÆÁÄ» HUD ÉÏµÄÄÇ¸öÍ¼±ê£©")]
+    [Header("æƒ…ç»ªèƒŒåŒ…")]
+    [Tooltip("æƒ…ç»ªèƒŒåŒ…å›¾æ ‡ï¼ˆå±å¹• HUD ä¸Šçš„é‚£ä¸ªå›¾æ ‡ï¼‰")]
     public RectTransform backpackIcon;
 
-    [Tooltip("·µ»Ø 3D Ê±×Ô¶¯´ò¿ª±³°üÍ¼±ê£¨Á¬Í¬¸¸¼¶£©")]
+    [Tooltip("è¿”å› 3D æ—¶è‡ªåŠ¨æ‰“å¼€èƒŒåŒ…å›¾æ ‡ï¼ˆè¿åŒçˆ¶çº§ï¼‰")]
     public bool activateBackpackOnReturn = true;
 
-    [Header("Âä´üºóµÄ 3D ÇéĞ÷Çò£¨·ÅÔÚ±³°üÅÔ±ß£©")]
-    [Tooltip("Âä´üÇòµÄÔ¤ÖÆÌå£¬Áô¿ÕÔò¸´ÓÃ·ÉĞĞÇòÔ¤ÖÆÌå")]
+    [Header("è½è¢‹åçš„ 3D æƒ…ç»ªçƒï¼ˆæ”¾åœ¨èƒŒåŒ…æ—è¾¹ï¼‰")]
+    [Tooltip("è½è¢‹çƒçš„é¢„åˆ¶ä½“ï¼Œç•™ç©ºåˆ™å¤ç”¨é£è¡Œçƒé¢„åˆ¶ä½“")]
     public GameObject landedBallPrefab;
 
-    [Tooltip("Ïà¶Ô±³°üÍ¼±êµÄÆÁÄ»ÏñËØÆ«ÒÆ£º¸º X Íù×ó£¬Õı Y ÍùÉÏ")]
+    [Tooltip("ç›¸å¯¹èƒŒåŒ…å›¾æ ‡çš„å±å¹•åƒç´ åç§»ï¼šè´Ÿ X å¾€å·¦ï¼Œæ­£ Y å¾€ä¸Š")]
     public Vector2 landedScreenOffset = new Vector2(-90f, 0f);
 
-    [Tooltip("Âä´üÇò¾àÀëÏà»úµÄÉî¶È£¨Ã×£©£¬Ô½Ğ¡Ô½¿¿Ç°")]
+    [Tooltip("è½è¢‹çƒè·ç¦»ç›¸æœºçš„æ·±åº¦ï¼ˆç±³ï¼‰ï¼Œè¶Šå°è¶Šé å‰")]
     public float landedDistance = 0.9f;
 
-    [Tooltip("Âä´üÇòÔÚÆÁÄ»ÉÏµÄÖ±¾¶£¨ÏñËØ£©")]
+    [Tooltip("è½è¢‹çƒåœ¨å±å¹•ä¸Šçš„ç›´å¾„ï¼ˆåƒç´ ï¼‰")]
     public float landedScreenSize = 70f;
 
     public bool landedAutoSize = true;
 
-    [Tooltip("¹Ø±Õ Landed Auto Size Ê±ÓÃÕâ¸öËõ·Å")]
+    [Tooltip("å…³é—­ Landed Auto Size æ—¶ç”¨è¿™ä¸ªç¼©æ”¾")]
     public float landedScale = 0.15f;
 
-    [Tooltip("Âä´üÇòÊÇ·ñÒ»Ö±×Ô×ª")]
+    [Tooltip("è½è¢‹çƒæ˜¯å¦ä¸€ç›´è‡ªè½¬")]
     public bool landedSpin = true;
 
-    [Tooltip("Âä´üÇò×Ô×ªËÙ¶È£¨¶È/Ãë£©")]
+    [Tooltip("è½è¢‹çƒè‡ªè½¬é€Ÿåº¦ï¼ˆåº¦/ç§’ï¼‰")]
     public float landedSpinSpeed = 60f;
 
-    [Tooltip("Âä´üÇò×Ô×ªÖáÇãĞ±½Ç¶È")]
+    [Tooltip("è½è¢‹çƒè‡ªè½¬è½´å€¾æ–œè§’åº¦")]
     public float landedSpinAxisTilt = 20f;
 
-    [Header("·ÉĞĞ£¨3D Çò£©")]
-    [Tooltip("Çò¾àÀëÏà»úµÄ¹Ì¶¨Éî¶È£¨Ã×£©")]
+    [Header("é£è¡Œï¼ˆ3D çƒï¼‰")]
+    [Tooltip("çƒè·ç¦»ç›¸æœºçš„å›ºå®šæ·±åº¦ï¼ˆç±³ï¼‰")]
     public float flightDistance = 1.2f;
 
     public float appearSeconds = 0.25f;
     public float flyToCenterSeconds = 0.5f;
 
-    [Tooltip("ÔÚÆÁÄ»ÖĞÑë×Ô×ªµÄÊ±¼ä")]
+    [Tooltip("åœ¨å±å¹•ä¸­å¤®è‡ªè½¬çš„æ—¶é—´")]
     public float centerHoldSeconds = 1.8f;
 
-    [Tooltip("ÖĞÑë×Ô×ªËÙ¶È£¨¶È/Ãë£©")]
+    [Tooltip("ä¸­å¤®è‡ªè½¬é€Ÿåº¦ï¼ˆåº¦/ç§’ï¼‰")]
     public float spinDegreesPerSecond = 160f;
 
-    [Tooltip("ÖĞÑë×Ô×ªÖáÇãĞ±½Ç¶È")]
+    [Tooltip("ä¸­å¤®è‡ªè½¬è½´å€¾æ–œè§’åº¦")]
     public float spinAxisTilt = 20f;
 
     public float flyToBackpackSeconds = 0.6f;
 
-    [Tooltip("·Éµ½±³°üºó¶à¾ÃÏú»Ù·ÉĞĞÇò")]
+    [Tooltip("é£åˆ°èƒŒåŒ…åå¤šä¹…é”€æ¯é£è¡Œçƒ")]
     public float destroyDelay = 0.05f;
 
-    [Header("3D Çò³ß´ç")]
+    [Header("3D çƒå°ºå¯¸")]
     public bool autoFitScreenSize = true;
 
-    [Tooltip("·ÉĞĞÊ±ÇòÔÚÆÁÄ»ÉÏµÄÖ±¾¶£¨ÏñËØ£©")]
+    [Tooltip("é£è¡Œæ—¶çƒåœ¨å±å¹•ä¸Šçš„ç›´å¾„ï¼ˆåƒç´ ï¼‰")]
     public float landedScreenSizeFlight = 140f;
 
-    [Tooltip("¹Ø±Õ Auto Fit Ê±ÓÃÕâ¸öËõ·Å")]
+    [Tooltip("å…³é—­ Auto Fit æ—¶ç”¨è¿™ä¸ªç¼©æ”¾")]
     public float endScale = 0.4f;
 
-    [Header("·µ»Ø 3D")]
+    [Header("è¿”å› 3D")]
     public TaskHUD taskHUD;
     public bool callReturnTo3D = true;
     public Camera worldCamera;
@@ -111,7 +111,7 @@ public class EmotionRewardFly : MonoBehaviour
 
     // ====================================================================
 
-    /// <summary>happy = true ÂÌÉ«£¨¿ªĞÄ£©£¬false ºìÉ«£¨Ê§Íû£©</summary>
+    /// <summary>happy = true ç»¿è‰²ï¼ˆå¼€å¿ƒï¼‰ï¼Œfalse çº¢è‰²ï¼ˆå¤±æœ›ï¼‰</summary>
     public void Play(bool happy)
     {
         if (playing) return;
@@ -122,31 +122,31 @@ public class EmotionRewardFly : MonoBehaviour
     {
         playing = true;
 
-        // 1. »Øµ½ 3D
+        // 1. å›åˆ° 3D
         if (callReturnTo3D)
         {
             if (taskHUD == null) taskHUD = FindObjectOfType<TaskHUD>(true);
             if (taskHUD != null) taskHUD.ReturnTo3D();
-            else Debug.LogWarning("[Emotion] ÕÒ²»µ½ TaskHUD£¬3D ³¡¾°¿ÉÄÜ²»»á»Ö¸´", this);
+            else Debug.LogWarning("[Emotion] æ‰¾ä¸åˆ° TaskHUDï¼Œ3D åœºæ™¯å¯èƒ½ä¸ä¼šæ¢å¤", this);
         }
 
         yield return null;
         yield return null;
 
-        // 2. Ïà»ú
+        // 2. ç›¸æœº
         cam = ResolveCamera();
         if (cam == null)
         {
-            Debug.LogError("[Emotion] ÕÒ²»µ½¿ÉÓÃÏà»ú£¬ÇéĞ÷ÇòÎŞ·¨·ÉĞĞ", this);
+            Debug.LogError("[Emotion] æ‰¾ä¸åˆ°å¯ç”¨ç›¸æœºï¼Œæƒ…ç»ªçƒæ— æ³•é£è¡Œ", this);
             playing = false;
             yield break;
         }
 
-        // 3. ±³°üÍ¼±ê
+        // 3. èƒŒåŒ…å›¾æ ‡
         if (backpackIcon != null && activateBackpackOnReturn)
             ActivateChain(backpackIcon);
 
-        // 4. ËéËéÄî
+        // 4. ç¢ç¢å¿µ
         GameObject mumbleGO = mumbleRoot != null
             ? mumbleRoot
             : (mumbleAnchor != null ? mumbleAnchor.gameObject : null);
@@ -155,7 +155,7 @@ public class EmotionRewardFly : MonoBehaviour
 
         if (!hasMumble)
         {
-            Debug.LogError("[Emotion] Ã»Ö¸¶¨ËéËéÄîÎïÌå£¨Mumble Root / Mumble Anchor ¶¼ÊÇ¿Õ£©£¬ËéËéÄî²»»áÏÔÊ¾", this);
+            Debug.LogError("[Emotion] æ²¡æŒ‡å®šç¢ç¢å¿µç‰©ä½“ï¼ˆMumble Root / Mumble Anchor éƒ½æ˜¯ç©ºï¼‰ï¼Œç¢ç¢å¿µä¸ä¼šæ˜¾ç¤º", this);
         }
         else
         {
@@ -163,7 +163,7 @@ public class EmotionRewardFly : MonoBehaviour
             {
                 ActivateChain(mumbleGO.transform);
                 if (!mumbleGO.activeInHierarchy)
-                    Debug.LogError("[Emotion] ËéËéÄî´ò¿ªÁËµ«²ã¼¶ÀïÈÔ²»¿É¼û£¬¼ì²éËüµÄ¸¸¼¶»ò Canvas", mumbleGO);
+                    Debug.LogError("[Emotion] ç¢ç¢å¿µæ‰“å¼€äº†ä½†å±‚çº§é‡Œä»ä¸å¯è§ï¼Œæ£€æŸ¥å®ƒçš„çˆ¶çº§æˆ– Canvas", mumbleGO);
             }
 
             if (mumbleLabel == null)
@@ -174,37 +174,37 @@ public class EmotionRewardFly : MonoBehaviour
                 mumbleLabel.text = happy ? happyMumble : sadMumble;
 
                 if (debugLog)
-                    Debug.Log("[Emotion] ËéËéÄî£º" + mumbleLabel.text +
-                              " | ÎïÌå=" + mumbleGO.name +
-                              " | ²ã¼¶¼¤»î=" + mumbleGO.activeInHierarchy +
-                              " | ÊÀ½çÎ»ÖÃ=" + mumbleGO.transform.position, mumbleGO);
+                    Debug.Log("[Emotion] ç¢ç¢å¿µï¼š" + mumbleLabel.text +
+                              " | ç‰©ä½“=" + mumbleGO.name +
+                              " | å±‚çº§æ¿€æ´»=" + mumbleGO.activeInHierarchy +
+                              " | ä¸–ç•Œä½ç½®=" + mumbleGO.transform.position, mumbleGO);
             }
             else
             {
-                Debug.LogWarning("[Emotion] ËéËéÄîÀïÃ»ÕÒµ½ Text£¨Èç¹ûÓÃ TextMeshPro£¬Çë°Ñ×Ö¶Î»»³É TMP_Text£©", mumbleGO);
+                Debug.LogWarning("[Emotion] ç¢ç¢å¿µé‡Œæ²¡æ‰¾åˆ° Textï¼ˆå¦‚æœç”¨ TextMeshProï¼Œè¯·æŠŠå­—æ®µæ¢æˆ TMP_Textï¼‰", mumbleGO);
             }
         }
 
         yield return null;
 
-        // 5. ËéËéÄîÏÔÊ¾ ¡ú ÏûÊ§ ¡ú ÇéĞ÷Çò²Å³ö³¡
+        // 5. ç¢ç¢å¿µæ˜¾ç¤º â†’ æ¶ˆå¤± â†’ æƒ…ç»ªçƒæ‰å‡ºåœº
         if (hasMumble && mumbleShowSeconds > 0f)
             yield return new WaitForSecondsRealtime(mumbleShowSeconds);
 
         if (hasMumble && controlMumbleVisibility)
         {
             mumbleGO.SetActive(false);
-            if (debugLog) Debug.Log("[Emotion] ËéËéÄîÒÑÏûÊ§");
+            if (debugLog) Debug.Log("[Emotion] ç¢ç¢å¿µå·²æ¶ˆå¤±");
         }
 
         if (hasMumble && ballDelayAfterMumble > 0f)
             yield return new WaitForSecondsRealtime(ballDelayAfterMumble);
 
-        // 6. Éú³É·ÉĞĞÇò
+        // 6. ç”Ÿæˆé£è¡Œçƒ
         GameObject prefab = happy ? happyBallPrefab : sadBallPrefab;
         if (prefab == null)
         {
-            Debug.LogError("[Emotion] " + (happy ? "¿ªĞÄ" : "Ê§Íû") + "ÇéĞ÷ÇòÔ¤ÖÆÌåÃ»ÍÏ", this);
+            Debug.LogError("[Emotion] " + (happy ? "å¼€å¿ƒ" : "å¤±æœ›") + "æƒ…ç»ªçƒé¢„åˆ¶ä½“æ²¡æ‹–", this);
             playing = false;
             yield break;
         }
@@ -218,7 +218,7 @@ public class EmotionRewardFly : MonoBehaviour
 
         float ballScale = ResolveFlightScale(ball);
 
-        // 7. Æğµã
+        // 7. èµ·ç‚¹
         Vector3 startWorld = mumbleAnchor != null ? AnchorWorld(mumbleAnchor) : FallbackStartWorld();
         Vector3 startLocal = cam.transform.InverseTransformPoint(startWorld);
         Vector3 centerLocal = new Vector3(0f, 0f, flightDistance);
@@ -227,7 +227,7 @@ public class EmotionRewardFly : MonoBehaviour
         ball.transform.localRotation = Quaternion.identity;
         ball.transform.localScale = Vector3.zero;
 
-        // 8. ³öÏÖ
+        // 8. å‡ºç°
         float appear = Mathf.Max(0.0001f, appearSeconds);
         float t = 0f;
         while (t < appear)
@@ -239,7 +239,7 @@ public class EmotionRewardFly : MonoBehaviour
         }
         ball.transform.localScale = Vector3.one * ballScale;
 
-        // 9. ·Éµ½ÆÁÄ»ÖĞÑë
+        // 9. é£åˆ°å±å¹•ä¸­å¤®
         float toCenter = Mathf.Max(0.0001f, flyToCenterSeconds);
         t = 0f;
         while (t < toCenter)
@@ -252,7 +252,7 @@ public class EmotionRewardFly : MonoBehaviour
         }
         ball.transform.localPosition = centerLocal;
 
-        // 10. ÖĞÑë×Ô×ª£¨ÏñµØÇò£©
+        // 10. ä¸­å¤®è‡ªè½¬ï¼ˆåƒåœ°çƒï¼‰
         Vector3 spinAxis = Quaternion.AngleAxis(spinAxisTilt, Vector3.forward) * Vector3.up;
         t = 0f;
         while (t < centerHoldSeconds)
@@ -263,7 +263,7 @@ public class EmotionRewardFly : MonoBehaviour
             yield return null;
         }
 
-        // 11. ·ÉÈë±³°ü
+        // 11. é£å…¥èƒŒåŒ…
         float toBag = Mathf.Max(0.0001f, flyToBackpackSeconds);
         Vector3 from = ball.transform.localPosition;
         t = 0f;
@@ -278,34 +278,51 @@ public class EmotionRewardFly : MonoBehaviour
         }
         ball.transform.localPosition = BackpackLocal();
 
-        // 12. Ïú»Ù·ÉĞĞÇò
+        // 12. é”€æ¯é£è¡Œçƒ
         if (destroyDelay > 0f) yield return new WaitForSecondsRealtime(destroyDelay);
         Destroy(ball);
-        if (debugLog) Debug.Log("[Emotion] ·ÉĞĞÇòÒÑÏú»Ù");
+        if (debugLog) Debug.Log("[Emotion] é£è¡Œçƒå·²é”€æ¯");
 
-        // 13. ÔÚ±³°üÅÔ±ßÉú³ÉÒ»¸öĞ¡µÄ 3D ÇéĞ÷Çò£¬²¢±£³Ö×Ô×ª
+        // 13. åœ¨èƒŒåŒ…æ—è¾¹ç”Ÿæˆä¸€ä¸ªå°çš„ 3D æƒ…ç»ªçƒï¼Œå¹¶ä¿æŒè‡ªè½¬
         SpawnLandedBall(happy);
 
         playing = false;
     }
 
     // ====================================================================
-    // ¹¤¾ß
+    // å·¥å…·
     // ====================================================================
 
     private Camera ResolveCamera()
     {
-        if (worldCamera != null) return worldCamera;
+        // åœºæ™¯é‡Œå¯èƒ½è¿˜æŒ‚ç€è¿‡åœºç›¸æœºï¼ˆthirdcamreï¼‰ï¼Œå®ƒå·²ç»å…³æ‰æ—¶ä¸èƒ½ç”¨ï¼Œå¦åˆ™çƒçš„èµ·ç‚¹/ç»ˆç‚¹ä¼šè·‘åˆ°é—¨å£
+        if (worldCamera != null && worldCamera.isActiveAndEnabled) return worldCamera;
+        worldCamera = null;
 
         if (taskHUD == null) taskHUD = FindObjectOfType<TaskHUD>(true);
-        if (taskHUD != null && taskHUD.cameraOnReturn != null)
-            return taskHUD.cameraOnReturn;
+        if (taskHUD != null && taskHUD.cameraOnReturn != null && taskHUD.cameraOnReturn.isActiveAndEnabled)
+        {
+            worldCamera = taskHUD.cameraOnReturn;
+            return worldCamera;
+        }
+
+        // ä¼˜å…ˆç©å®¶èº«ä¸Šçš„ç¬¬ä¸€äººç§°ç›¸æœº
+        PlayerMover pm = FindObjectOfType<PlayerMover>();
+        if (pm != null && pm.cameraTransform != null)
+        {
+            Camera c = pm.cameraTransform.GetComponent<Camera>();
+            if (c != null && c.isActiveAndEnabled)
+            {
+                worldCamera = c;
+                return c;
+            }
+        }
 
         if (Camera.main != null) return Camera.main;
 
         Camera[] all = FindObjectsOfType<Camera>(true);
         for (int i = 0; i < all.Length; i++)
-            if (all[i] != null && all[i].enabled) return all[i];
+            if (all[i] != null && all[i].isActiveAndEnabled) return all[i];
 
         return all.Length > 0 ? all[0] : null;
     }
@@ -361,7 +378,7 @@ public class EmotionRewardFly : MonoBehaviour
         return cam.transform.InverseTransformPoint(world);
     }
 
-    // Âä´üÇòÔÚÏà»ú±¾µØ¿Õ¼äÀïµÄÎ»ÖÃ£º±³°üÍ¼±êµÄÆÁÄ»Î»ÖÃ + ÏñËØÆ«ÒÆ
+    // è½è¢‹çƒåœ¨ç›¸æœºæœ¬åœ°ç©ºé—´é‡Œçš„ä½ç½®ï¼šèƒŒåŒ…å›¾æ ‡çš„å±å¹•ä½ç½® + åƒç´ åç§»
     private Vector3 LandedLocal()
     {
         Vector2 screen;
@@ -375,7 +392,7 @@ public class EmotionRewardFly : MonoBehaviour
         return cam.transform.InverseTransformPoint(world);
     }
 
-    // Éú³ÉÂä´üºóµÄĞ¡ 3D Çò£¨²»ÊÇ UI Í¼Æ¬£©
+    // ç”Ÿæˆè½è¢‹åçš„å° 3D çƒï¼ˆä¸æ˜¯ UI å›¾ç‰‡ï¼‰
     private void SpawnLandedBall(bool happy)
     {
         GameObject prefab = landedBallPrefab;
@@ -385,7 +402,7 @@ public class EmotionRewardFly : MonoBehaviour
 
         if (prefab == null)
         {
-            Debug.LogWarning("[Emotion] Ã»ÓĞ¿ÉÓÃµÄÂä´üÇòÔ¤ÖÆÌå", this);
+            Debug.LogWarning("[Emotion] æ²¡æœ‰å¯ç”¨çš„è½è¢‹çƒé¢„åˆ¶ä½“", this);
             return;
         }
 
@@ -393,7 +410,7 @@ public class EmotionRewardFly : MonoBehaviour
         ball.name = happy ? "LandedEmotionBall_Happy" : "LandedEmotionBall_Sad";
         ball.SetActive(true);
 
-        // ¹Òµ½Ïà»úÏÂ£ºÍæ¼Ò×ß¶¯ / ×ªÊÓ½ÇÊ±£¬ËüÒ»Ö±¹Ì¶¨ÔÚ±³°üÍ¼±êÅÔ±ß
+        // æŒ‚åˆ°ç›¸æœºä¸‹ï¼šç©å®¶èµ°åŠ¨ / è½¬è§†è§’æ—¶ï¼Œå®ƒä¸€ç›´å›ºå®šåœ¨èƒŒåŒ…å›¾æ ‡æ—è¾¹
         ball.transform.SetParent(cam.transform, true);
         ball.transform.localScale = Vector3.one;
 
@@ -410,9 +427,9 @@ public class EmotionRewardFly : MonoBehaviour
             StartCoroutine(SpinLanded(ball.transform));
 
         if (debugLog)
-            Debug.Log("[Emotion] ±³°üÅÔ±ßÒÑÉú³É 3D ÇéĞ÷Çò£º" + ball.name +
-                      " | ÆÁÄ»Æ«ÒÆ=" + landedScreenOffset +
-                      " | Ëõ·Å=" + scale, ball);
+            Debug.Log("[Emotion] èƒŒåŒ…æ—è¾¹å·²ç”Ÿæˆ 3D æƒ…ç»ªçƒï¼š" + ball.name +
+                      " | å±å¹•åç§»=" + landedScreenOffset +
+                      " | ç¼©æ”¾=" + scale, ball);
     }
 
     private IEnumerator SpinLanded(Transform ball)
@@ -432,7 +449,7 @@ public class EmotionRewardFly : MonoBehaviour
         return ScaleForPixels(ball, landedScreenSizeFlight, flightDistance);
     }
 
-    // °´ÆÁÄ»ÏñËØ·´ÍÆÊÀ½çËõ·Å
+    // æŒ‰å±å¹•åƒç´ åæ¨ä¸–ç•Œç¼©æ”¾
     private float ScaleForPixels(GameObject obj, float pixels, float distance)
     {
         float diameter = MeasureDiameter(obj);
