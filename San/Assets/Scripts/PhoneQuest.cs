@@ -1,11 +1,12 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
 /// 情绪球收集完成后：
-/// 手机震动/响铃 → 玩家靠近后切换到第四个镜头并闪屏 →
+/// 手机震动/响铃 → 弹出两句碎碎念 → 玩家靠近后切换到第四个镜头并闪屏 →
 /// 点击手机 → 打开同场景中的 2D 面板。
 /// </summary>
 public class PhoneQuest : MonoBehaviour
@@ -82,6 +83,25 @@ public class PhoneQuest : MonoBehaviour
     [Tooltip("提示文字，可留空自动找")]
     public Text openPromptText;
 
+    [Header("响铃碎碎念弹窗")]
+    [Tooltip("弹窗根物体（UI 或世界空间气泡都行），留空就不弹")]
+    public GameObject popupRoot;
+
+    [Tooltip("弹窗上的文字组件，留空自动在子物体里找 Text")]
+    public Text popupLabel;
+
+    [TextArea] public string firstPopupText = "诶！手机响了";
+    [TextArea] public string secondPopupText = "去看看吧";
+
+    [Tooltip("第一句显示多久（秒）")]
+    public float firstPopupSeconds = 2f;
+
+    [Tooltip("两句之间的间隔（秒）")]
+    public float popupGapSeconds = 0.3f;
+
+    [Tooltip("第二句显示多久（秒）")]
+    public float secondPopupSeconds = 2f;
+
     [Header("进入 2D")]
     [Tooltip("点击手机后打开的 2D 面板，默认关闭")]
     public GameObject level2DPanel;
@@ -106,6 +126,8 @@ public class PhoneQuest : MonoBehaviour
     private bool isNear;
     private bool flashOn;
     private float flashTimer;
+
+    private Coroutine popupRoutine;
 
     // ---------------- 镜头切换状态 ----------------
     private class CameraState
@@ -145,6 +167,13 @@ public class PhoneQuest : MonoBehaviour
         if (openPrompt != null)
             openPrompt.SetActive(false);
 
+        // 碎碎念弹窗初始隐藏
+        if (popupLabel == null && popupRoot != null)
+            popupLabel = popupRoot.GetComponentInChildren<Text>(true);
+
+        if (popupRoot != null)
+            popupRoot.SetActive(false);
+
         SetScreenFlash(false);
 
         if (switchCameraWhenNear && approachCamera == null)
@@ -162,6 +191,8 @@ public class PhoneQuest : MonoBehaviour
     {
         // 物体被意外关闭时，别把镜头一直锁在镜头4
         if (cameraSwitched) RestoreCamera();
+
+        HidePopup();
     }
 
     // ====================================================================
@@ -183,16 +214,63 @@ public class PhoneQuest : MonoBehaviour
         SetScreenFlash(false);
         PlayRing();
 
+        // 手机响的同时，弹出两句碎碎念
+        StopPopupRoutine();
+        popupRoutine = StartCoroutine(PlayRingPopups());
+
         if (vibrateRealDevice)
             Handheld.Vibrate();
 
         if (debugLog)
-            Debug.Log("[Phone] 情绪球收集完成，手机开始震动", this);
+            Debug.Log("[Phone] 情绪球收集完成，手机开始震动 + 弹碎碎念", this);
 
         if (screenRenderer == null)
             Debug.LogWarning("[Phone] Screen Renderer 没拖，屏幕不会闪烁", this);
         else if (screenNormalMaterial == null || screenFlashMaterial == null)
             Debug.LogWarning("[Phone] 两个屏幕材质没拖完整，屏幕不会闪烁", this);
+    }
+
+    private IEnumerator PlayRingPopups()
+    {
+        if (popupRoot == null) yield break;
+
+        // 第一句
+        if (popupLabel != null) popupLabel.text = firstPopupText;
+        popupRoot.SetActive(true);
+
+        if (firstPopupSeconds > 0f)
+            yield return new WaitForSecondsRealtime(firstPopupSeconds);
+
+        popupRoot.SetActive(false);
+
+        if (popupGapSeconds > 0f)
+            yield return new WaitForSecondsRealtime(popupGapSeconds);
+
+        // 第二句
+        if (popupLabel != null) popupLabel.text = secondPopupText;
+        popupRoot.SetActive(true);
+
+        if (secondPopupSeconds > 0f)
+            yield return new WaitForSecondsRealtime(secondPopupSeconds);
+
+        popupRoot.SetActive(false);
+        popupRoutine = null;
+    }
+
+    private void StopPopupRoutine()
+    {
+        if (popupRoutine != null)
+        {
+            StopCoroutine(popupRoutine);
+            popupRoutine = null;
+        }
+    }
+
+    private void HidePopup()
+    {
+        StopPopupRoutine();
+        if (popupRoot != null)
+            popupRoot.SetActive(false);
     }
 
     void Update()
@@ -429,6 +507,9 @@ public class PhoneQuest : MonoBehaviour
 
         if (openPrompt != null)
             openPrompt.SetActive(false);
+
+        // 打开手机时，把还没播完的碎碎念关掉
+        HidePopup();
 
         flashOn = false;
         SetScreenFlash(false);

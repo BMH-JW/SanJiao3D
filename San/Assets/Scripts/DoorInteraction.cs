@@ -81,7 +81,7 @@ public static class HingeUtility
 /// <summary>
 /// 通用开关门脚本（门 / 抽屉 / 冰箱都能用）：
 /// 1. 靠近 → 显示开门按钮（没拖 Proximity Trigger 就不弹）；
-/// 2. 点击 → 旋转开关，同步开关阻挡碰撞体；
+/// 2. 点击 → 旋转开关，同步开关阻挡碰撞体，播放开关门音效；
 /// 3. 只有拖了 Enter Trigger 的那份（厨房门），玩家进入后会触发入场剧情 + 延迟自动关门，且只触发一次。
 /// </summary>
 public class DoorInteraction : MonoBehaviour
@@ -115,6 +115,13 @@ public class DoorInteraction : MonoBehaviour
     [Header("进门剧情")]
     [Tooltip("挂着 DoorEntrySequence（DoorEnter）的物体，玩家进入后调用它的 Play()")]
     public DoorEntrySequence entryStory;
+
+    [Header("音效（可选，不拖就不响）")]
+    [Tooltip("留空会自动在当前物体上创建一个 AudioSource")]
+    public AudioSource audioSource;
+    public AudioClip openClip;
+    public AudioClip closeClip;
+    [Range(0f, 1f)] public float soundVolume = 1f;
 
     [Header("进入检测")]
     [Tooltip("除脚底外再检测的高度（米），避免触发器悬空")]
@@ -168,6 +175,8 @@ public class DoorInteraction : MonoBehaviour
             StoryFinished = true;
             entered = true;
         }
+
+        EnsureAudio();
     }
 
     private void Start()
@@ -333,6 +342,9 @@ public class DoorInteraction : MonoBehaviour
             isOpen = Mathf.Abs(currentAngle - openAngle) < 0.01f;
             if (doorBlocker != null) doorBlocker.enabled = !isOpen;
 
+            // 门真正关到位时播放关门音效（咔哒 / 砰）
+            if (!isOpen) PlaySound(closeClip);
+
             if (debugLog)
                 Debug.Log("[Door] 门现在是：" + (isOpen ? "打开" : "关闭"), this);
         }
@@ -350,6 +362,8 @@ public class DoorInteraction : MonoBehaviour
             playerMover.SetControl(true, true);
             playerMover.LockCursor(true);
         }
+
+        PlaySound(openClip);   // 开门时立即播开门音效
     }
 
     private void StartClose()
@@ -358,6 +372,27 @@ public class DoorInteraction : MonoBehaviour
         targetAngle = 0f;
 
         if (doorBlocker != null) doorBlocker.enabled = true;
+    }
+
+    // ---- 音效 ----
+    private void EnsureAudio()
+    {
+        if (audioSource == null)
+        {
+            audioSource = GetComponent<AudioSource>();
+            if (audioSource == null)
+                audioSource = gameObject.AddComponent<AudioSource>();
+        }
+
+        audioSource.playOnAwake = false;
+        audioSource.loop = false;
+    }
+
+    private void PlaySound(AudioClip clip)
+    {
+        if (clip == null) return;
+        EnsureAudio();
+        audioSource.PlayOneShot(clip, soundVolume);
     }
 
     /// <summary>记录初始位置，并按配置算出铰链点（世界坐标）。</summary>
