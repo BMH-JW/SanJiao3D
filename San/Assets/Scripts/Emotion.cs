@@ -80,6 +80,19 @@ public class EmotionRewardFly : MonoBehaviour
     public float landedSpinSpeed = 60f;
     public float landedSpinAxisTilt = 20f;
 
+    [Tooltip("多个落袋情绪球之间的屏幕像素间距（第二个排在第一个后面）")]
+    public float landedScreenSpacing = 55f;
+
+    [Tooltip("所有落袋情绪球的整体大小倍率")]
+    public float landedSizeMultiplier = 0.8f;
+
+    [Header("剧情情绪球（对话结束后播放）")]
+    [Tooltip("母亲对话结束后播放的「内耗」球；留空则用失望球")]
+    public GameObject internalFrictionBallPrefab;
+
+    [Tooltip("朋友对话结束后播放的「得到释放」球；留空则用开心球")]
+    public GameObject releaseBallPrefab;
+
     [Header("飞行球")]
     [Tooltip("飞行球距离相机的深度")]
     public float flightDistance = 1.2f;
@@ -369,10 +382,45 @@ public class EmotionRewardFly : MonoBehaviour
             yield break;
         }
 
+        yield return FlyBallAnimation(
+            prefab,
+            happy ? "EmotionBall_Happy" : "EmotionBall_Sad");
+
+        // 14. 先切回第一视角
+        SwitchToFirstPerson();
+
+        // 15. 在背包旁边生成小的 3D 情绪球
+        SpawnLandedBall(happy);
+
+        // 16. 情绪球收集完成，启动手机事件
+        if (phoneQuest == null)
+            phoneQuest = FindObjectOfType<PhoneQuest>(true);
+
+        if (phoneQuest != null)
+        {
+            phoneQuest.StartPhoneEvent();
+        }
+        else
+        {
+            Debug.LogWarning(
+                "[Emotion] 场景里找不到 PhoneQuest，" +
+                "手机事件不会触发",
+                this);
+        }
+
+        playing = false;
+    }
+
+    // ====================================================================
+    // 共用的情绪球飞行动画：出现 → 飞到屏幕中央自转 → 飞入背包
+    // ====================================================================
+
+    private IEnumerator FlyBallAnimation(
+        GameObject prefab,
+        string ballName)
+    {
         GameObject ball = Instantiate(prefab);
-        ball.name = happy
-            ? "EmotionBall_Happy"
-            : "EmotionBall_Sad";
+        ball.name = ballName;
 
         ball.SetActive(true);
 
@@ -389,7 +437,7 @@ public class EmotionRewardFly : MonoBehaviour
 
         float ballScale = ResolveFlightScale(ball);
 
-        // 8. 起点：碎碎念的位置
+        // 起点：碎碎念的位置
         Vector3 startWorld = mumbleAnchor != null
             ? AnchorWorld(mumbleAnchor)
             : FallbackStartWorld();
@@ -404,7 +452,7 @@ public class EmotionRewardFly : MonoBehaviour
         ball.transform.localRotation = Quaternion.identity;
         ball.transform.localScale = Vector3.zero;
 
-        // 9. 情绪球出现
+        // 情绪球出现
         float appear = Mathf.Max(0.0001f, appearSeconds);
         float t = 0f;
 
@@ -424,7 +472,7 @@ public class EmotionRewardFly : MonoBehaviour
         ball.transform.localScale =
             Vector3.one * ballScale;
 
-        // 10. 飞到屏幕中央
+        // 飞到屏幕中央
         float toCenter =
             Mathf.Max(0.0001f, flyToCenterSeconds);
 
@@ -448,7 +496,7 @@ public class EmotionRewardFly : MonoBehaviour
 
         ball.transform.localPosition = centerLocal;
 
-        // 11. 在中央像地球一样自转
+        // 在中央像地球一样自转
         Vector3 spinAxis =
             Quaternion.AngleAxis(
                 spinAxisTilt,
@@ -469,7 +517,7 @@ public class EmotionRewardFly : MonoBehaviour
             yield return null;
         }
 
-        // 12. 飞入情绪背包
+        // 飞入情绪背包
         float toBag =
             Mathf.Max(0.0001f, flyToBackpackSeconds);
 
@@ -501,7 +549,6 @@ public class EmotionRewardFly : MonoBehaviour
 
         ball.transform.localPosition = BackpackLocal();
 
-        // 13. 销毁飞行球
         if (destroyDelay > 0f)
         {
             yield return new WaitForSecondsRealtime(
@@ -512,28 +559,87 @@ public class EmotionRewardFly : MonoBehaviour
 
         if (debugLog)
             Debug.Log("[Emotion] 飞行球已销毁");
+    }
 
-        // 14. 先切回第一视角
+    // ====================================================================
+    // 剧情情绪球：母亲对话结束 → 内耗球；朋友对话结束 → 释放球
+    // ====================================================================
+
+    /// <summary>播放「内耗」情绪球动画（落到背包旁边）。</summary>
+    public void PlayInternalFrictionBall()
+    {
+        GameObject prefab = internalFrictionBallPrefab != null
+            ? internalFrictionBallPrefab
+            : sadBallPrefab;
+
+        PlayStoryBall(prefab, false, "EmotionBall_InternalFriction");
+    }
+
+    /// <summary>播放「得到释放」情绪球动画（落到背包旁边）。</summary>
+    public void PlayReleaseBall()
+    {
+        GameObject prefab = releaseBallPrefab != null
+            ? releaseBallPrefab
+            : happyBallPrefab;
+
+        PlayStoryBall(prefab, true, "EmotionBall_Release");
+    }
+
+    private void PlayStoryBall(
+        GameObject prefab,
+        bool landedHappy,
+        string ballName)
+    {
+        if (playing) return;
+
+        if (prefab == null)
+        {
+            Debug.LogError(
+                "[Emotion] " + ballName +
+                " 的预制体没拖，动画无法播放",
+                this);
+
+            return;
+        }
+
+        StartCoroutine(
+            PlayStoryBallRoutine(prefab, landedHappy, ballName));
+    }
+
+    private IEnumerator PlayStoryBallRoutine(
+        GameObject prefab,
+        bool landedHappy,
+        string ballName)
+    {
+        playing = true;
+
+        cam = ResolveCamera();
+
+        if (cam == null)
+        {
+            Debug.LogError(
+                "[Emotion] 找不到可用相机，剧情情绪球无法播放",
+                this);
+
+            playing = false;
+            yield break;
+        }
+
+        if (alwaysRenderOnTop)
+            EnsureOverlayCamera();
+
+        if (backpackIcon != null)
+            ActivateChain(backpackIcon);
+
+        yield return FlyBallAnimation(prefab, ballName);
+
+        // 情绪球到位后，从 Camera5 切回第一视角
         SwitchToFirstPerson();
 
-        // 15. 在背包旁边生成小的 3D 情绪球
-        SpawnLandedBall(happy);
+        SpawnLandedBall(landedHappy, prefab);
 
-        // 16. 情绪球收集完成，启动手机事件
-        if (phoneQuest == null)
-            phoneQuest = FindObjectOfType<PhoneQuest>(true);
-
-        if (phoneQuest != null)
-        {
-            phoneQuest.StartPhoneEvent();
-        }
-        else
-        {
-            Debug.LogWarning(
-                "[Emotion] 场景里找不到 PhoneQuest，" +
-                "手机事件不会触发",
-                this);
-        }
+        if (debugLog)
+            Debug.Log("[Emotion] 剧情情绪球已落入背包：" + ballName);
 
         playing = false;
     }
@@ -572,13 +678,14 @@ public class EmotionRewardFly : MonoBehaviour
 
             if (!visible) continue;
 
-            PlaceLandedBall(entry, activeCam);
+            PlaceLandedBall(entry, activeCam, i);
         }
     }
 
     private void PlaceLandedBall(
         LandedBall entry,
-        Camera activeCam)
+        Camera activeCam,
+        int index = 0)
     {
         if (entry == null ||
             entry.transform == null ||
@@ -589,11 +696,24 @@ public class EmotionRewardFly : MonoBehaviour
 
         Vector2 screen;
 
+        // 按前面每个球在屏幕上的实际宽度依次排开，保证不重叠
+        float slotOffset = 0f;
+
+        for (int j = 0; j < index && j < landedBalls.Count; j++)
+        {
+            float width = Mathf.Max(
+                ScreenDiameterOf(landedBalls[j], activeCam),
+                landedScreenSpacing);
+
+            slotOffset += width + 4f;
+        }
+
         if (backpackIcon != null)
         {
             screen =
                 ScreenOf(backpackIcon, activeCam) +
-                landedScreenOffset;
+                landedScreenOffset +
+                new Vector2(slotOffset, 0f);
         }
         else
         {
@@ -601,7 +721,8 @@ public class EmotionRewardFly : MonoBehaviour
                 new Vector2(
                     Screen.width * 0.5f,
                     Screen.height * 0.5f) +
-                landedScreenOffset;
+                landedScreenOffset +
+                new Vector2(slotOffset, 0f);
         }
 
         Vector3 world = activeCam.ScreenToWorldPoint(
@@ -612,28 +733,57 @@ public class EmotionRewardFly : MonoBehaviour
 
         entry.transform.position = world;
 
+        float worldPerPixel =
+            2f * landedDistance *
+            Mathf.Tan(
+                activeCam.fieldOfView *
+                0.5f * Mathf.Deg2Rad) /
+            Mathf.Max(1, Screen.height);
+
         if (landedAutoSize && entry.diameter > 0.0001f)
         {
-            float worldPerPixel =
-                2f * landedDistance *
-                Mathf.Tan(
-                    activeCam.fieldOfView *
-                    0.5f * Mathf.Deg2Rad) /
-                Mathf.Max(1, Screen.height);
-
             float scale = Mathf.Max(
                 0.0001f,
                 landedScreenSize * worldPerPixel /
                 entry.diameter);
 
             entry.transform.localScale =
-                Vector3.one * scale;
+                Vector3.one * scale * Mathf.Max(0.01f, landedSizeMultiplier);
         }
         else
         {
             entry.transform.localScale =
-                Vector3.one * Mathf.Max(0.0001f, landedScale);
+                Vector3.one * Mathf.Max(
+                    0.0001f,
+                    landedScale * Mathf.Max(0.01f, landedSizeMultiplier));
         }
+    }
+
+    // 某个落袋球在屏幕上的实际直径（像素）
+    private float ScreenDiameterOf(
+        LandedBall entry,
+        Camera activeCam)
+    {
+        if (entry == null || activeCam == null)
+            return 0f;
+
+        float multiplier = Mathf.Max(0.01f, landedSizeMultiplier);
+
+        if (landedAutoSize && entry.diameter > 0.0001f)
+            return landedScreenSize * multiplier;
+
+        float worldPerPixel =
+            2f * landedDistance *
+            Mathf.Tan(
+                activeCam.fieldOfView *
+                0.5f * Mathf.Deg2Rad) /
+            Mathf.Max(1, Screen.height);
+
+        if (worldPerPixel <= 0.0000001f)
+            return 0f;
+
+        return landedScale * multiplier *
+               entry.diameter / worldPerPixel;
     }
 
     // ====================================================================
@@ -807,9 +957,13 @@ public class EmotionRewardFly : MonoBehaviour
     // 落袋球
     // ====================================================================
 
-    private void SpawnLandedBall(bool happy)
+    private void SpawnLandedBall(
+        bool happy,
+        GameObject prefabOverride = null)
     {
-        GameObject prefab = landedBallPrefab;
+        GameObject prefab = prefabOverride != null
+            ? prefabOverride
+            : landedBallPrefab;
 
         if (prefab == null)
         {
@@ -853,7 +1007,10 @@ public class EmotionRewardFly : MonoBehaviour
         landedBalls.Add(entry);
 
         // 先摆一次，避免第一帧停留在原点
-        PlaceLandedBall(entry, ActiveCamera());
+        PlaceLandedBall(
+            entry,
+            ActiveCamera(),
+            landedBalls.Count - 1);
 
         if (landedSpin)
             StartCoroutine(SpinLanded(ball.transform));
@@ -883,6 +1040,30 @@ public class EmotionRewardFly : MonoBehaviour
                 Space.Self);
 
             yield return null;
+        }
+    }
+
+    /// <summary>
+    /// 重新显示背包图标，并让已获得的情绪球跟随当前相机显示。
+    /// 切到 Camera5 之类的过场镜头后调用。
+    /// </summary>
+    public void ShowBackpackWithBalls()
+    {
+        if (backpackIcon != null)
+            ActivateChain(backpackIcon);
+
+        if (alwaysRenderOnTop && landedBalls.Count > 0)
+            EnsureOverlayCamera();
+
+        if (debugLog)
+        {
+            Camera active = ActiveCamera();
+
+            Debug.Log(
+                "[Emotion] 已显示背包与情绪球：相机=" +
+                (active != null ? active.name : "无") +
+                "，落袋球数=" + landedBalls.Count,
+                this);
         }
     }
 
