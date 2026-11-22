@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.UI;
+using UnityEngine.Events;
 
 /// <summary>
 /// 校准结果 → 碎碎念 → 3D 情绪球飞行 → 落袋销毁 →
@@ -138,6 +139,17 @@ public class EmotionRewardFly : MonoBehaviour
 
     [Tooltip("情绪球飞进背包后，视角切换回第一视角")]
     public bool switchToFirstPersonAfterLanding = true;
+
+    [Tooltip("切回第一视角时恢复玩家移动、视角控制和光标锁定")]
+    public bool restorePlayerControlOnReturn = true;
+
+    [Header("回到第一视角后")]
+    [Tooltip("情绪球落入背包、视角切回第一视角后触发；可绑下一关提示面板")]
+    public UnityEvent onReturnedToFirstPerson;
+
+    [Header("下一关入口")]
+    [Tooltip("本关情绪球到手后要开启的客厅触发区；留空则不处理")]
+    public LivingRoomQuest livingRoomQuest;
 
     [Header("收集完成后的手机事件")]
     [Tooltip("情绪球落袋后要震动的手机，留空自动找")]
@@ -638,6 +650,13 @@ public class EmotionRewardFly : MonoBehaviour
 
         SpawnLandedBall(landedHappy, prefab);
 
+        // 回到第一视角、球已入包 → 通知外部（例如弹下一关提示）
+        onReturnedToFirstPerson?.Invoke();
+
+        // 本关情绪球到手后，开启客厅触发区，正式进入下一关
+        if (livingRoomQuest != null)
+            livingRoomQuest.EnableTrigger();
+
         if (debugLog)
             Debug.Log("[Emotion] 剧情情绪球已落入背包：" + ballName);
 
@@ -949,8 +968,33 @@ public class EmotionRewardFly : MonoBehaviour
         // 同步内部相机
         cam = target;
 
+        // 恢复玩家控制（对话期间被锁住，不恢复就会卡在原地不能动）
+        RestorePlayerControl();
+
         if (debugLog)
             Debug.Log("[Emotion] 已切回第一视角：" + target.name, this);
+    }
+
+    private void RestorePlayerControl()
+    {
+        if (!restorePlayerControlOnReturn) return;
+
+        // 有些对话流程会把时间冻结，一并还原
+        Time.timeScale = 1f;
+
+        PlayerMover pm = FindObjectOfType<PlayerMover>(true);
+
+        if (pm == null)
+        {
+            Debug.LogWarning("[Emotion] 找不到 PlayerMover，玩家控制未恢复", this);
+            return;
+        }
+
+        pm.SetControl(true, true);
+        pm.LockCursor(true);
+
+        if (debugLog)
+            Debug.Log("[Emotion] 已恢复玩家控制", this);
     }
 
     // ====================================================================
