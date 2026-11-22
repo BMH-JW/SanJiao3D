@@ -4,7 +4,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 /// <summary>
-/// 点击把手 / 门板开关冰箱、抽屉、门。
+/// 统一处理 3D 点击：开关冰箱、抽屉、门，以及拾取 PickupItem（点击移到视角中央，再点放回）。
 /// 场景里不需要挂载：进入场景后会自动创建一个实例，也可以手动挂到把手上。
 /// 第一人称鼠标可能是锁定的，Input.mousePosition 固定屏幕中心，所以自己发射线，
 /// 并且射线没打中时会在鼠标附近做一次辅助选取，让小把手也好点。
@@ -12,7 +12,11 @@ using UnityEngine.UI;
 public class HandleClick : MonoBehaviour
 {
     [Header("点击设置")]
-    public float maxDistance = 5f;      // 点击检测距离
+    public float maxDistance = 5f;      // 门 / 冰箱的点击检测距离
+    [Tooltip("可拾取物品的点击距离，通常比门远一些")]
+    public float pickupMaxDistance = 8f;
+    [Tooltip("点到物品外层碰撞体时，允许的包围盒误差（米）")]
+    public float pickupBoundsTolerance = 0.3f;
     [Tooltip("射线没打中时，在鼠标周围多少像素内自动选中把手")]
     public float screenRadius = 45f;
     public bool showDebugInfo = true;   // 在 Console 打印点击命中的物体
@@ -73,7 +77,9 @@ public class HandleClick : MonoBehaviour
         if (!Input.GetMouseButtonDown(0)) return;
 
         // 场景里没有可交互物体就不处理
-        if (FindObjectOfType<DoorInteraction>() == null && FindObjectOfType<FridgeDoor>() == null)
+        if (FindObjectOfType<DoorInteraction>() == null &&
+            FindObjectOfType<FridgeDoor>() == null &&
+            FindObjectOfType<PickupItem>() == null)
             return;
 
         Camera cam = GetRayCamera();
@@ -94,7 +100,13 @@ public class HandleClick : MonoBehaviour
     private bool TryDirectClick(Camera cam, Vector3 screenPos)
     {
         Ray ray = cam.ScreenPointToRay(screenPos);
-        RaycastHit[] hits = Physics.RaycastAll(ray, maxDistance);
+
+        // 拾取物的点击距离比门远；包含所有层和触发器，下面再按规则跳过
+        float rayDistance = Mathf.Max(maxDistance, pickupMaxDistance);
+        RaycastHit[] hits = Physics.RaycastAll(ray, rayDistance, ~0, QueryTriggerInteraction.Collide);
+
+        // RaycastAll 的返回顺序不保证，按距离排序，避免隔墙点到物品/门
+        System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
 
         PlayerMover mover = FindObjectOfType<PlayerMover>();
         Transform playerRoot = mover != null ? mover.transform : null;
@@ -103,6 +115,24 @@ public class HandleClick : MonoBehaviour
         {
             // 射线从玩家身体里出发，跳过玩家自己的碰撞体
             if (playerRoot != null && hit.collider.transform.IsChildOf(playerRoot)) continue;
+
+            // 客厅可拾取物品：第一次点移到视角中央，再点一次放回原位
+            PickupItem pickup = PickupItem.FindAtClick(hit, pickupBoundsTolerance);
+            if (pickup != null && hit.distance <= pickupMaxDistance)
+            {
+                if (showDebugInfo) Debug.Log($"[HandleClick] 命中 {hit.collider.name} → {pickup.name} 拾取/放回");
+                pickup.TogglePickup(cam);
+                return true;
+            }
+
+            // 触发器（任务触发区、提示区等）不挡点击
+            if (hit.collider.isTrigger) continue;
+
+            // 超过门的交互距离后，后面的门/冰箱不再响应
+            if (hit.distance > maxDistance) break;
+
+            // Ignore Raycast 层的物体不挡点击
+            if (hit.collider.gameObject.layer == 2) continue;
 
             DoorInteraction door = hit.collider.GetComponentInParent<DoorInteraction>();
             if (door != null)
@@ -120,11 +150,27 @@ public class HandleClick : MonoBehaviour
                 return true;
             }
 
-            if (showDebugInfo) Debug.Log($"[HandleClick] 被 {hit.collider.name} 挡住，尝试辅助点击");
+            if (showDebugInfo)
+            {
+                Debug.Log($"[HandleClick] 点击被 {GetPath(hit.collider.transform)}（层 {hit.collider.gameObject.layer}）挡住。" +
+                          "如果它是可拾取物，请确认物体上有启用中的 Collider，或把 PickupItem 挂到它的父级；" +
+                          "也可以调大 Pickup Max Distance / Pickup Bounds Tolerance。");
+            }
             break;
         }
 
         return false;
+    }
+
+    private static string GetPath(Transform t)
+    {
+        string path = t.name;
+        while (t.parent != null)
+        {
+            t = t.parent;
+            path = t.name + "/" + path;
+        }
+        return path;
     }
 
     // 射线没打中时：在鼠标附近找最近的可交互物，方便点小把手
