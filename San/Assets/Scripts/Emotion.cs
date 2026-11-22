@@ -94,6 +94,13 @@ public class EmotionRewardFly : MonoBehaviour
     [Tooltip("朋友对话结束后播放的「得到释放」球；留空则用开心球")]
     public GameObject releaseBallPrefab;
 
+    [Header("客厅关卡情绪球")]
+    [Tooltip("倒计时内找到遥控器的「惊喜」球；留空则用开心球")]
+    public GameObject surpriseBallPrefab;
+
+    [Tooltip("倒计时结束后没找到的「愤怒」球；留空则用失望球")]
+    public GameObject angryBallPrefab;
+
     [Header("飞行球")]
     [Tooltip("飞行球距离相机的深度")]
     public float flightDistance = 1.2f;
@@ -154,6 +161,9 @@ public class EmotionRewardFly : MonoBehaviour
     [Header("收集完成后的手机事件")]
     [Tooltip("情绪球落袋后要震动的手机，留空自动找")]
     public PhoneQuest phoneQuest;
+
+    [Tooltip("情绪球落袋后是否触发手机事件；客厅关卡给球时取消勾选")]
+    public bool triggerPhoneEvent = true;
 
     [Header("置顶渲染")]
     [Tooltip("情绪球始终显示在所有 3D 物体前面，不会被墙/家具挡住")]
@@ -404,20 +414,23 @@ public class EmotionRewardFly : MonoBehaviour
         // 15. 在背包旁边生成小的 3D 情绪球
         SpawnLandedBall(happy);
 
-        // 16. 情绪球收集完成，启动手机事件
-        if (phoneQuest == null)
-            phoneQuest = FindObjectOfType<PhoneQuest>(true);
+        // 16. 情绪球收集完成，启动手机事件（可在 Inspector 关闭）
+        if (triggerPhoneEvent)
+        {
+            if (phoneQuest == null)
+                phoneQuest = FindObjectOfType<PhoneQuest>(true);
 
-        if (phoneQuest != null)
-        {
-            phoneQuest.StartPhoneEvent();
-        }
-        else
-        {
-            Debug.LogWarning(
-                "[Emotion] 场景里找不到 PhoneQuest，" +
-                "手机事件不会触发",
-                this);
+            if (phoneQuest != null)
+            {
+                phoneQuest.StartPhoneEvent();
+            }
+            else
+            {
+                Debug.LogWarning(
+                    "[Emotion] 场景里找不到 PhoneQuest，" +
+                    "手机事件不会触发",
+                    this);
+            }
         }
 
         playing = false;
@@ -595,6 +608,26 @@ public class EmotionRewardFly : MonoBehaviour
             : happyBallPrefab;
 
         PlayStoryBall(prefab, true, "EmotionBall_Release");
+    }
+
+    /// <summary>客厅找到遥控器 → 惊喜情绪球。</summary>
+    public void PlaySurpriseBall()
+    {
+        GameObject prefab = surpriseBallPrefab != null
+            ? surpriseBallPrefab
+            : happyBallPrefab;
+
+        PlayStoryBall(prefab, true, "EmotionBall_Surprise");
+    }
+
+    /// <summary>客厅超时没找到 → 愤怒情绪球。</summary>
+    public void PlayAngryBall()
+    {
+        GameObject prefab = angryBallPrefab != null
+            ? angryBallPrefab
+            : sadBallPrefab;
+
+        PlayStoryBall(prefab, false, "EmotionBall_Angry");
     }
 
     private void PlayStoryBall(

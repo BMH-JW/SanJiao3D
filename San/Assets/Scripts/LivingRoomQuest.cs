@@ -75,6 +75,26 @@ public class LivingRoomQuest : MonoBehaviour
     [Tooltip("提前找到遥控板、任务完成时触发")]
     public UnityEvent onQuestComplete;
 
+    [Header("发现遥控器")]
+    [Tooltip("遥控器上的 PickupItem；玩家拿起它即视为发现")]
+    public PickupItem remote;
+
+    [Header("结果演出")]
+    [Tooltip("情绪球系统（成功给惊喜球，失败给愤怒球）")]
+    public EmotionRewardFly emotionRewardFly;
+
+    [Tooltip("发现遥控器后延迟多久弹结果提示（秒）")]
+    public float successDelay = 1.5f;
+
+    [Tooltip("成功弹窗：「哦！原来在这！」")]
+    public GameObject successPopup;
+
+    [Tooltip("失败弹窗：「真是气死我了！我不看了！」")]
+    public GameObject failPopup;
+
+    [Tooltip("结果弹窗停留时间（秒）")]
+    public float resultPopupSeconds = 2f;
+
     private AudioSource audioSource;
     private Coroutine introRoutine;
     private Coroutine timerRoutine;
@@ -86,6 +106,8 @@ public class LivingRoomQuest : MonoBehaviour
         if (hintPanel != null) hintPanel.SetActive(false);
         if (taskPanel != null) taskPanel.SetActive(false);
         if (countdownText != null) countdownText.gameObject.SetActive(false);
+        if (successPopup != null) successPopup.SetActive(false);
+        if (failPopup != null) failPopup.SetActive(false);
 
         if (confirmButton != null)
             confirmButton.onClick.AddListener(OnConfirmClicked);
@@ -104,6 +126,13 @@ public class LivingRoomQuest : MonoBehaviour
     {
         if (!startOnPlayerEnter) return;
         if (other.CompareTag(playerTag)) StartQuest();
+    }
+
+    private void Update()
+    {
+        // 倒计时进行中，玩家拿起遥控器 = 发现
+        if (running && remote != null && remote.IsHeld)
+            CompleteQuest();
     }
 
     /// <summary>开启触发区（手机关卡完成后调用）。</summary>
@@ -133,6 +162,9 @@ public class LivingRoomQuest : MonoBehaviour
     {
         if (started) return;
         started = true;
+
+        // 进入客厅关卡，解锁物品拾取
+        PickupItem.SetPickupEnabled(true);
 
         if (introRoutine != null) StopCoroutine(introRoutine);
         introRoutine = StartCoroutine(IntroRoutine());
@@ -209,6 +241,9 @@ public class LivingRoomQuest : MonoBehaviour
             audioSource.PlayOneShot(timeUpClip, volume);
 
         onTimeUp?.Invoke();
+
+        // 没找到 → 失败演出
+        StartCoroutine(FailRoutine());
     }
 
     /// <summary>找到遥控板时调用，结束任务。</summary>
@@ -230,6 +265,34 @@ public class LivingRoomQuest : MonoBehaviour
             countdownText.text = "完成";
 
         onQuestComplete?.Invoke();
+
+        // 成功演出
+        StartCoroutine(SuccessRoutine());
+    }
+
+    private IEnumerator SuccessRoutine()
+    {
+        // 发现后延迟 1~2 秒再弹提示
+        yield return new WaitForSecondsRealtime(Mathf.Max(0f, successDelay));
+
+        if (successPopup != null) successPopup.SetActive(true);
+        yield return new WaitForSecondsRealtime(Mathf.Max(0f, resultPopupSeconds));
+        if (successPopup != null) successPopup.SetActive(false);
+
+        // 获得惊喜情绪球
+        if (emotionRewardFly != null)
+            emotionRewardFly.PlaySurpriseBall();
+    }
+
+    private IEnumerator FailRoutine()
+    {
+        if (failPopup != null) failPopup.SetActive(true);
+        yield return new WaitForSecondsRealtime(Mathf.Max(0f, resultPopupSeconds));
+        if (failPopup != null) failPopup.SetActive(false);
+
+        // 获得愤怒情绪球
+        if (emotionRewardFly != null)
+            emotionRewardFly.PlayAngryBall();
     }
 
     private void UpdateCountdown(float seconds)
