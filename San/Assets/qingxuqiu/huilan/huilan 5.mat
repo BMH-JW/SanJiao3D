@@ -118,7 +118,7 @@ Material:
     - _Glossiness: 0
     - _GlossyReflections: 0
     - _GlowIntensity: 6
-    - _LightIntensity: 3.88
+    - _LightIntensity: 3.47
     - _LightSize: 0.226
     - _Metallic: 0
     - _Mode: 0
@@ -141,11 +141,11 @@ Material:
     - _ZWrite: 1
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
-    - _CloudColor: {r: 0.4528302, g: 0.07093981, b: 0, a: 1}
+    - _CloudColor: {r: 0.8930817, g: 0.33770314, b: 0.17131425, a: 1}
     - _CloudDark: {r: 1, g: 1, b: 1, a: 1}
-    - _Color: {r: 0.8930817, g: 0.8022934, b: 0.27241787, a: 1}
+    - _Color: {r: 0.836478, g: 0.7184778, b: 0.38667372, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _LightColor: {r: 0.9710874, g: 1, b: 0.31132066, a: 1}
+    - _LightColor: {r: 0.16981131, g: 0.11421696, b: 0.042185802, a: 1}
     - _LightOffset: {r: 0, g: -0.14, b: 0, a: 0}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
     - _SpecPos: {r: 0, g: -0.05, b: 0, a: 0}

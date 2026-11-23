@@ -165,6 +165,28 @@ public class EmotionRewardFly : MonoBehaviour
     [Tooltip("情绪球落袋后是否触发手机事件；客厅关卡给球时取消勾选")]
     public bool triggerPhoneEvent = true;
 
+    [Header("闭幕效果")]
+    [Tooltip("落袋球达到这个数量时自动触发闭幕（0 = 不自动，手动调 StartClosing()）")]
+    public int autoClosingAtBallCount = 3;
+
+    [Tooltip("背包图标渐隐时长（秒）；0 = 直接隐藏不渐隐")]
+    public float backpackFadeSeconds = 1.5f;
+
+    [Tooltip("黑场遮罩 CanvasGroup；场景里放一个全屏黑色 Image 加 CanvasGroup，拖进来即生效")]
+    public CanvasGroup closingFadeMask;
+
+    [Tooltip("黑场遮罩渐显时长（秒）；会与背包渐隐同时开始")]
+    public float maskFadeSeconds = 1.5f;
+
+    [Tooltip("闭幕开始时触发（例如播结束音乐）")]
+    public UnityEvent onClosingStart;
+
+    [Tooltip("背包完全隐藏后触发（例如播字幕、切场景）")]
+    public UnityEvent onClosingDone;
+
+    private bool closingMode;
+    private bool closingStarted;
+
     [Header("置顶渲染")]
     [Tooltip("情绪球始终显示在所有 3D 物体前面，不会被墙/家具挡住")]
     public bool alwaysRenderOnTop = true;
@@ -178,9 +200,8 @@ public class EmotionRewardFly : MonoBehaviour
     private bool playing;
     private Camera cam;
     private Camera overlayCam;
-    private Camera overlayStackCamera;   // 置顶相机当前叠在哪个主相机上
+    private Camera overlayStackCamera;
 
-    // 已经落袋的小情绪球，每帧跟随当前相机重新定位
     private class LandedBall
     {
         public Transform transform;
@@ -192,10 +213,6 @@ public class EmotionRewardFly : MonoBehaviour
 
     // ====================================================================
 
-    /// <summary>
-    /// happy = true：绿色区域，开心球。
-    /// happy = false：红色区域，失望球。
-    /// </summary>
     public void Play(bool happy)
     {
         if (playing) return;
@@ -206,7 +223,6 @@ public class EmotionRewardFly : MonoBehaviour
     {
         playing = true;
 
-        // 1. 回到 3D
         if (callReturnTo3D)
         {
             if (taskHUD == null)
@@ -223,11 +239,9 @@ public class EmotionRewardFly : MonoBehaviour
         yield return null;
         yield return null;
 
-        // ReturnTo3D 会关掉其它相机，这里把置顶相机重新打开
         if (alwaysRenderOnTop && overlayCam != null)
             overlayCam.enabled = true;
 
-        // 2. 确定当前使用的相机
         cam = ResolveCamera();
 
         if (cam == null)
@@ -240,11 +254,9 @@ public class EmotionRewardFly : MonoBehaviour
             yield break;
         }
 
-        // 3. 确保背包图标可见
         if (backpackIcon != null && activateBackpackOnReturn)
             ActivateChain(backpackIcon);
 
-        // 4. 显示碎碎念：优先用 2D 弹窗，没配才用 3D 气泡
         bool useThinkTexts = happyThinkText != null || sadThinkText != null;
         bool useThinkPanel = useThinkTexts || thinkPanel != null || thinkLabel != null;
         GameObject mumbleGO = mumbleRoot != null
@@ -257,7 +269,6 @@ public class EmotionRewardFly : MonoBehaviour
 
         if (useThinkTexts)
         {
-            // 两句话分别做成两个物体，成功/失败只切显隐，文案在场景里直接改
             if (thinkPanel != null) ActivateChain(thinkPanel.transform);
 
             if (happyThinkText != null)
@@ -282,7 +293,6 @@ public class EmotionRewardFly : MonoBehaviour
         }
         else if (useThinkPanel)
         {
-            // 单 Text 模式：直接改文字
             Transform anchor = thinkPanel != null
                 ? thinkPanel.transform
                 : thinkLabel.transform;
@@ -352,7 +362,6 @@ public class EmotionRewardFly : MonoBehaviour
 
         yield return null;
 
-        // 5. 碎碎念显示一段时间后消失
         if (hasMumble && mumbleShowSeconds > 0f)
         {
             yield return new WaitForSecondsRealtime(
@@ -381,14 +390,12 @@ public class EmotionRewardFly : MonoBehaviour
                 Debug.Log("[Emotion] 碎碎念已消失");
         }
 
-        // 6. 碎碎念消失后，等待情绪球出场
         if (hasMumble && ballDelayAfterMumble > 0f)
         {
             yield return new WaitForSecondsRealtime(
                 ballDelayAfterMumble);
         }
 
-        // 7. 生成飞行情绪球
         GameObject prefab =
             happy ? happyBallPrefab : sadBallPrefab;
 
@@ -408,13 +415,9 @@ public class EmotionRewardFly : MonoBehaviour
             prefab,
             happy ? "EmotionBall_Happy" : "EmotionBall_Sad");
 
-        // 14. 先切回第一视角
         SwitchToFirstPerson();
-
-        // 15. 在背包旁边生成小的 3D 情绪球
         SpawnLandedBall(happy);
 
-        // 16. 情绪球收集完成，启动手机事件（可在 Inspector 关闭）
         if (triggerPhoneEvent)
         {
             if (phoneQuest == null)
@@ -437,7 +440,7 @@ public class EmotionRewardFly : MonoBehaviour
     }
 
     // ====================================================================
-    // 共用的情绪球飞行动画：出现 → 飞到屏幕中央自转 → 飞入背包
+    // 共用的情绪球飞行动画
     // ====================================================================
 
     private IEnumerator FlyBallAnimation(
@@ -449,20 +452,17 @@ public class EmotionRewardFly : MonoBehaviour
 
         ball.SetActive(true);
 
-        // 置顶渲染：换到专用层，由叠加相机画在场景最前面
         if (alwaysRenderOnTop)
         {
             EnsureOverlayCamera();
             SetLayerRecursively(ball, overlayLayer);
         }
 
-        // 飞行球挂到相机下，飞行路径固定在屏幕上
         ball.transform.SetParent(cam.transform, true);
         ball.transform.localScale = Vector3.one;
 
         float ballScale = ResolveFlightScale(ball);
 
-        // 起点：碎碎念的位置
         Vector3 startWorld = mumbleAnchor != null
             ? AnchorWorld(mumbleAnchor)
             : FallbackStartWorld();
@@ -477,7 +477,6 @@ public class EmotionRewardFly : MonoBehaviour
         ball.transform.localRotation = Quaternion.identity;
         ball.transform.localScale = Vector3.zero;
 
-        // 情绪球出现
         float appear = Mathf.Max(0.0001f, appearSeconds);
         float t = 0f;
 
@@ -497,7 +496,6 @@ public class EmotionRewardFly : MonoBehaviour
         ball.transform.localScale =
             Vector3.one * ballScale;
 
-        // 飞到屏幕中央
         float toCenter =
             Mathf.Max(0.0001f, flyToCenterSeconds);
 
@@ -521,7 +519,6 @@ public class EmotionRewardFly : MonoBehaviour
 
         ball.transform.localPosition = centerLocal;
 
-        // 在中央像地球一样自转
         Vector3 spinAxis =
             Quaternion.AngleAxis(
                 spinAxisTilt,
@@ -542,7 +539,6 @@ public class EmotionRewardFly : MonoBehaviour
             yield return null;
         }
 
-        // 飞入情绪背包
         float toBag =
             Mathf.Max(0.0001f, flyToBackpackSeconds);
 
@@ -587,10 +583,9 @@ public class EmotionRewardFly : MonoBehaviour
     }
 
     // ====================================================================
-    // 剧情情绪球：母亲对话结束 → 内耗球；朋友对话结束 → 释放球
+    // 剧情情绪球
     // ====================================================================
 
-    /// <summary>播放「内耗」情绪球动画（落到背包旁边）。</summary>
     public void PlayInternalFrictionBall()
     {
         GameObject prefab = internalFrictionBallPrefab != null
@@ -600,7 +595,6 @@ public class EmotionRewardFly : MonoBehaviour
         PlayStoryBall(prefab, false, "EmotionBall_InternalFriction");
     }
 
-    /// <summary>播放「得到释放」情绪球动画（落到背包旁边）。</summary>
     public void PlayReleaseBall()
     {
         GameObject prefab = releaseBallPrefab != null
@@ -610,7 +604,6 @@ public class EmotionRewardFly : MonoBehaviour
         PlayStoryBall(prefab, true, "EmotionBall_Release");
     }
 
-    /// <summary>客厅找到遥控器 → 惊喜情绪球。</summary>
     public void PlaySurpriseBall()
     {
         GameObject prefab = surpriseBallPrefab != null
@@ -620,7 +613,6 @@ public class EmotionRewardFly : MonoBehaviour
         PlayStoryBall(prefab, true, "EmotionBall_Surprise");
     }
 
-    /// <summary>客厅超时没找到 → 愤怒情绪球。</summary>
     public void PlayAngryBall()
     {
         GameObject prefab = angryBallPrefab != null
@@ -678,15 +670,11 @@ public class EmotionRewardFly : MonoBehaviour
 
         yield return FlyBallAnimation(prefab, ballName);
 
-        // 情绪球到位后，从 Camera5 切回第一视角
         SwitchToFirstPerson();
-
         SpawnLandedBall(landedHappy, prefab);
 
-        // 回到第一视角、球已入包 → 通知外部（例如弹下一关提示）
         onReturnedToFirstPerson?.Invoke();
 
-        // 本关情绪球到手后，开启客厅触发区，正式进入下一关
         if (livingRoomQuest != null)
             livingRoomQuest.EnableTrigger();
 
@@ -697,7 +685,7 @@ public class EmotionRewardFly : MonoBehaviour
     }
 
     // ====================================================================
-    // 每帧让落袋球贴住背包图标（跟随当前启用的相机）
+    // LateUpdate：落袋球跟随相机 + 闭幕特殊处理
     // ====================================================================
 
     private void LateUpdate()
@@ -720,10 +708,19 @@ public class EmotionRewardFly : MonoBehaviour
                 continue;
             }
 
-            // 背包图标被隐藏时（例如进入 2D），球也一起隐藏
-            bool visible =
-                backpackIcon != null &&
-                backpackIcon.gameObject.activeInHierarchy;
+            // 闭幕模式：球保持显示，不再跟随背包显隐
+            bool visible;
+
+            if (closingMode)
+            {
+                visible = true;
+            }
+            else
+            {
+                visible =
+                    backpackIcon != null &&
+                    backpackIcon.gameObject.activeInHierarchy;
+            }
 
             if (entry.transform.gameObject.activeSelf != visible)
                 entry.transform.gameObject.SetActive(visible);
@@ -748,7 +745,6 @@ public class EmotionRewardFly : MonoBehaviour
 
         Vector2 screen;
 
-        // 按前面每个球在屏幕上的实际宽度依次排开，保证不重叠
         float slotOffset = 0f;
 
         for (int j = 0; j < index && j < landedBalls.Count; j++)
@@ -811,7 +807,6 @@ public class EmotionRewardFly : MonoBehaviour
         }
     }
 
-    // 某个落袋球在屏幕上的实际直径（像素）
     private float ScreenDiameterOf(
         LandedBall entry,
         Camera activeCam)
@@ -839,7 +834,7 @@ public class EmotionRewardFly : MonoBehaviour
     }
 
     // ====================================================================
-    // 置顶渲染：用一个只画情绪球层的叠加相机，保证球不被任何物体挡住
+    // 置顶渲染
     // ====================================================================
 
     private Camera EnsureOverlayCamera()
@@ -856,7 +851,6 @@ public class EmotionRewardFly : MonoBehaviour
             overlayCam.allowMSAA = true;
             overlayCam.enabled = true;
 
-            // URP：作为 Overlay 相机叠到主相机上，而不是独立出一张画面
             UniversalAdditionalCameraData data =
                 overlayCam.GetUniversalAdditionalCameraData();
             data.renderType = CameraRenderType.Overlay;
@@ -891,7 +885,6 @@ public class EmotionRewardFly : MonoBehaviour
         AttachOverlayTo(source);
     }
 
-    // 把置顶相机挂到当前主相机的 URP 相机栈里
     private void AttachOverlayTo(Camera source)
     {
         if (source == null || overlayCam == null) return;
@@ -930,7 +923,6 @@ public class EmotionRewardFly : MonoBehaviour
             all[i].gameObject.layer = layer;
     }
 
-    // 当前真正在渲染的相机
     private Camera ActiveCamera()
     {
         if (cam != null && cam.isActiveAndEnabled && cam != overlayCam)
@@ -960,7 +952,6 @@ public class EmotionRewardFly : MonoBehaviour
 
         Camera target = firstPersonCamera;
 
-        // 没手动指定，就用玩家身上的第一视角相机
         if (target == null)
         {
             PlayerMover pm = FindObjectOfType<PlayerMover>();
@@ -980,10 +971,8 @@ public class EmotionRewardFly : MonoBehaviour
             return;
         }
 
-        // 相机或它的父级可能是关着的，先打开
         ActivateChain(target.transform);
 
-        // 关掉其它所有相机，只留第一视角
         Camera[] all = FindObjectsOfType<Camera>(true);
 
         for (int i = 0; i < all.Length; i++)
@@ -997,11 +986,7 @@ public class EmotionRewardFly : MonoBehaviour
         }
 
         target.enabled = true;
-
-        // 同步内部相机
         cam = target;
-
-        // 恢复玩家控制（对话期间被锁住，不恢复就会卡在原地不能动）
         RestorePlayerControl();
 
         if (debugLog)
@@ -1012,7 +997,6 @@ public class EmotionRewardFly : MonoBehaviour
     {
         if (!restorePlayerControlOnReturn) return;
 
-        // 有些对话流程会把时间冻结，一并还原
         Time.timeScale = 1f;
 
         PlayerMover pm = FindObjectOfType<PlayerMover>(true);
@@ -1031,7 +1015,7 @@ public class EmotionRewardFly : MonoBehaviour
     }
 
     // ====================================================================
-    // 落袋球
+    // 落袋球 + 闭幕自动触发
     // ====================================================================
 
     private void SpawnLandedBall(
@@ -1071,7 +1055,6 @@ public class EmotionRewardFly : MonoBehaviour
             SetLayerRecursively(ball, overlayLayer);
         }
 
-        // 关键：不再挂在相机下，否则换视角后就固定死了
         ball.transform.SetParent(null, true);
         ball.transform.localScale = Vector3.one;
 
@@ -1083,7 +1066,6 @@ public class EmotionRewardFly : MonoBehaviour
 
         landedBalls.Add(entry);
 
-        // 先摆一次，避免第一帧停留在原点
         PlaceLandedBall(
             entry,
             ActiveCamera(),
@@ -1098,6 +1080,14 @@ public class EmotionRewardFly : MonoBehaviour
                 "[Emotion] 背包旁边已生成 3D 情绪球：" +
                 ball.name,
                 ball);
+        }
+
+        // ★ 自动闭幕检测
+        if (!closingMode &&
+            autoClosingAtBallCount > 0 &&
+            landedBalls.Count >= autoClosingAtBallCount)
+        {
+            StartClosing();
         }
     }
 
@@ -1120,10 +1110,6 @@ public class EmotionRewardFly : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// 重新显示背包图标，并让已获得的情绪球跟随当前相机显示。
-    /// 切到 Camera5 之类的过场镜头后调用。
-    /// </summary>
     public void ShowBackpackWithBalls()
     {
         if (backpackIcon != null)
@@ -1140,6 +1126,98 @@ public class EmotionRewardFly : MonoBehaviour
                 "[Emotion] 已显示背包与情绪球：相机=" +
                 (active != null ? active.name : "无") +
                 "，落袋球数=" + landedBalls.Count,
+                this);
+        }
+    }
+
+    // ====================================================================
+    // 闭幕系统：背包渐隐 + 黑场渐显 + 情绪球保留
+    // ====================================================================
+
+    public void StartClosing()
+    {
+        if (closingStarted) return;
+        closingStarted = true;
+        StartCoroutine(ClosingRoutine());
+    }
+
+    private IEnumerator ClosingRoutine()
+    {
+        // 1. 进入闭幕模式：LateUpdate 里球不再跟随背包显隐
+        closingMode = true;
+
+        // 2. 通知外部
+        onClosingStart?.Invoke();
+
+        // 3. 强制每个球保持显示
+        for (int i = 0; i < landedBalls.Count; i++)
+        {
+            if (landedBalls[i] != null && landedBalls[i].transform != null)
+                landedBalls[i].transform.gameObject.SetActive(true);
+        }
+
+        // 4. 同步渐隐背包 + 渐显黑场
+        CanvasGroup backpackCG = null;
+
+        if (backpackIcon != null)
+        {
+            backpackCG = backpackIcon.GetComponent<CanvasGroup>();
+            if (backpackCG == null)
+                backpackCG = backpackIcon.GetComponentInParent<CanvasGroup>();
+        }
+
+        // 黑场先激活但 alpha=0，不会穿帮
+        if (closingFadeMask != null)
+        {
+            closingFadeMask.gameObject.SetActive(true);
+            closingFadeMask.alpha = 0f;
+        }
+
+        bool needFade =
+            (backpackIcon != null && backpackFadeSeconds > 0f) ||
+            (closingFadeMask != null && maskFadeSeconds > 0f);
+
+        if (needFade)
+        {
+            float t = 0f;
+            float total = Mathf.Max(backpackFadeSeconds, maskFadeSeconds, 0.0001f);
+            float backpackStart = backpackCG != null ? backpackCG.alpha : 1f;
+
+            while (t < total)
+            {
+                t += Time.unscaledDeltaTime;
+
+                if (backpackCG != null && backpackFadeSeconds > 0f)
+                {
+                    float bk = Mathf.Clamp01(t / Mathf.Max(backpackFadeSeconds, 0.0001f));
+                    backpackCG.alpha = Mathf.Lerp(backpackStart, 0f, bk);
+                }
+
+                if (closingFadeMask != null && maskFadeSeconds > 0f)
+                {
+                    float mk = Mathf.Clamp01(t / Mathf.Max(maskFadeSeconds, 0.0001f));
+                    closingFadeMask.alpha = Mathf.Lerp(0f, 1f, mk);
+                }
+
+                yield return null;
+            }
+
+            if (backpackCG != null) backpackCG.alpha = 0f;
+            if (closingFadeMask != null) closingFadeMask.alpha = 1f;
+        }
+
+        // 5. 彻底隐藏背包
+        if (backpackIcon != null)
+            backpackIcon.gameObject.SetActive(false);
+
+        // 6. 通知外部完成
+        onClosingDone?.Invoke();
+
+        if (debugLog)
+        {
+            Debug.Log(
+                "[Emotion] 闭幕完成：背包已隐藏，情绪球保留（" +
+                landedBalls.Count + " 个）",
                 this);
         }
     }
@@ -1166,7 +1244,6 @@ public class EmotionRewardFly : MonoBehaviour
         if (Camera.main != null && Camera.main.isActiveAndEnabled)
             return Camera.main;
 
-        // 优先玩家身上的第一视角相机
         PlayerMover pm = FindObjectOfType<PlayerMover>();
 
         if (pm != null && pm.cameraTransform != null)

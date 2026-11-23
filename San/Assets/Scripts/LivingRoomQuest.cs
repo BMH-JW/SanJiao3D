@@ -112,7 +112,6 @@ public class LivingRoomQuest : MonoBehaviour
         if (confirmButton != null)
             confirmButton.onClick.AddListener(OnConfirmClicked);
 
-        // 触发默认关闭，避免干扰前面的关卡
         if (triggerCollider == null)
             triggerCollider = GetComponent<Collider>();
 
@@ -130,12 +129,10 @@ public class LivingRoomQuest : MonoBehaviour
 
     private void Update()
     {
-        // 倒计时进行中，玩家拿起遥控器 = 发现
         if (running && remote != null && remote.IsHeld)
             CompleteQuest();
     }
 
-    /// <summary>开启触发区（手机关卡完成后调用）。</summary>
     public void EnableTrigger()
     {
         gameObject.SetActive(true);
@@ -147,7 +144,6 @@ public class LivingRoomQuest : MonoBehaviour
             triggerCollider.enabled = true;
     }
 
-    /// <summary>关闭触发区。</summary>
     public void DisableTrigger()
     {
         if (triggerCollider == null)
@@ -157,13 +153,11 @@ public class LivingRoomQuest : MonoBehaviour
             triggerCollider.enabled = false;
     }
 
-    /// <summary>开始整个流程（也可由外部触发器调用）。</summary>
     public void StartQuest()
     {
         if (started) return;
         started = true;
 
-        // 进入客厅关卡，解锁物品拾取
         PickupItem.SetPickupEnabled(true);
 
         if (introRoutine != null) StopCoroutine(introRoutine);
@@ -172,22 +166,18 @@ public class LivingRoomQuest : MonoBehaviour
 
     private IEnumerator IntroRoutine()
     {
-        // 1. 巡视
         yield return new WaitForSecondsRealtime(Mathf.Max(0f, lookAroundSeconds));
 
-        // 2. 提示
         if (hintPanel != null) hintPanel.SetActive(true);
         yield return new WaitForSecondsRealtime(Mathf.Max(0f, hintSeconds));
         if (hintPanel != null) hintPanel.SetActive(false);
 
-        // 3. 任务面板
         if (taskPanel != null) taskPanel.SetActive(true);
         if (managePlayerControl) SetPlayerControl(false);
 
         introRoutine = null;
     }
 
-    /// <summary>确认按钮。</summary>
     public void OnConfirmClicked()
     {
         if (running) return;
@@ -207,7 +197,6 @@ public class LivingRoomQuest : MonoBehaviour
     {
         if (running) return;
 
-        // 确认后才显示倒计时（它必须放在任务面板外面，面板收起后才看得见）
         if (countdownText != null)
             countdownText.gameObject.SetActive(true);
 
@@ -242,11 +231,9 @@ public class LivingRoomQuest : MonoBehaviour
 
         onTimeUp?.Invoke();
 
-        // 没找到 → 失败演出
         StartCoroutine(FailRoutine());
     }
 
-    /// <summary>找到遥控板时调用，结束任务。</summary>
     public void CompleteQuest()
     {
         if (!running) return;
@@ -266,31 +253,35 @@ public class LivingRoomQuest : MonoBehaviour
 
         onQuestComplete?.Invoke();
 
-        // 成功演出
         StartCoroutine(SuccessRoutine());
     }
 
     private IEnumerator SuccessRoutine()
     {
-        // 发现后延迟 1~2 秒再弹提示
+        // ★ 计时结束，倒计时文字立即隐藏
+        if (countdownText != null)
+            countdownText.gameObject.SetActive(false);
+
         yield return new WaitForSecondsRealtime(Mathf.Max(0f, successDelay));
 
         if (successPopup != null) successPopup.SetActive(true);
         yield return new WaitForSecondsRealtime(Mathf.Max(0f, resultPopupSeconds));
         if (successPopup != null) successPopup.SetActive(false);
 
-        // 获得惊喜情绪球
         if (emotionRewardFly != null)
             emotionRewardFly.PlaySurpriseBall();
     }
 
     private IEnumerator FailRoutine()
     {
+        // ★ 计时结束，倒计时文字立即隐藏
+        if (countdownText != null)
+            countdownText.gameObject.SetActive(false);
+
         if (failPopup != null) failPopup.SetActive(true);
         yield return new WaitForSecondsRealtime(Mathf.Max(0f, resultPopupSeconds));
         if (failPopup != null) failPopup.SetActive(false);
 
-        // 获得愤怒情绪球
         if (emotionRewardFly != null)
             emotionRewardFly.PlayAngryBall();
     }

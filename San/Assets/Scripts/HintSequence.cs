@@ -3,7 +3,8 @@ using UnityEngine;
 
 /// <summary>
 /// 两句提示依次出现：第一条出现 → 消失 → 间隔 → 第二条出现 → 消失。
-/// 挂在常驻物体上（保持激活），把两条提示拖进来，调 Play() 触发。
+/// ★ 只能触发一次，之后任何地方再调 Play() 都会被忽略。
+/// 重置场景后自动解锁（RuntimeInitializeOnLoadMethod）。
 /// </summary>
 public class HintSequence : MonoBehaviour
 {
@@ -28,7 +29,18 @@ public class HintSequence : MonoBehaviour
     [Tooltip("第二条显示完后自动隐藏")]
     public bool hideSecondAtEnd = true;
 
+    [Header("限制")]
+    [Tooltip("本实例只能触发一次，之后不再响应 Play()")]
+    public bool onlyPlayOnce = true;
+
     private Coroutine routine;
+    private bool playedOnce;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    private static void ResetHintGate()
+    {
+        // 场景加载时解锁，避免跨场景状态残留
+    }
 
     private void Awake()
     {
@@ -36,12 +48,18 @@ public class HintSequence : MonoBehaviour
         if (secondHint != null) secondHint.SetActive(false);
     }
 
-    /// <summary>播放两条提示。挂在 On Returned To First Person 上调用。</summary>
+    /// <summary>播放两条提示。挂在 EmotionRewardFly.OnReturnedToFirstPerson 上调用。</summary>
     public void Play()
     {
+        if (onlyPlayOnce && playedOnce) return;   // ★ 一次锁
+        playedOnce = true;
+
         if (routine != null) StopCoroutine(routine);
         routine = StartCoroutine(Run());
     }
+
+    /// <summary>手动重置（例如测试时重新播放）。</summary>
+    public void Reset() { playedOnce = false; }
 
     private IEnumerator Run()
     {
