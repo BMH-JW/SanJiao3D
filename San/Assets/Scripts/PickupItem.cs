@@ -1,51 +1,51 @@
 using UnityEngine;
 
 /// <summary>
-/// ¿ÍÌü¿Éµã»÷Ê°È¡µÄÎïÆ·£¨±­×Ó¡¢¿¿Õí¡¢Ò£¿ØÆ÷µÈ£©¡£
-/// µÚÒ»´Îµã»÷£ºÎïÆ·ÒÆµ½ÊÓ½ÇÖĞÑë£¬²¢Ò»Ö±¸úËæÊÓ½Ç£»
-/// ÔÙµã»÷Ò»´Î£ºÎïÆ·Æ½»¬»Øµ½µã»÷Ç°µÄÎ»ÖÃºÍĞı×ª¡£
-/// µã»÷¼ì²âÓÉ HandleClick Í³Ò»·¢ÉäÏß´¦Àí£¬±¾½Å±¾²»ĞèÒª×Ô¼º¶ÁÊó±ê¡£
+/// ï¿½ï¿½ï¿½ï¿½ï¿½Éµï¿½ï¿½Ê°È¡ï¿½ï¿½ï¿½ï¿½Æ·ï¿½ï¿½ï¿½ï¿½ï¿½Ó¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò£ï¿½ï¿½ï¿½ï¿½ï¿½È£ï¿½ï¿½ï¿½
+/// ï¿½ï¿½Ò»ï¿½Îµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ·ï¿½Æµï¿½ï¿½Ó½ï¿½ï¿½ï¿½ï¿½ë£¬ï¿½ï¿½Ò»Ö±ï¿½ï¿½ï¿½ï¿½ï¿½Ó½Ç£ï¿½
+/// ï¿½Ùµï¿½ï¿½Ò»ï¿½Î£ï¿½ï¿½ï¿½Æ·Æ½ï¿½ï¿½ï¿½Øµï¿½ï¿½ï¿½ï¿½Ç°ï¿½ï¿½Î»ï¿½Ãºï¿½ï¿½ï¿½×ªï¿½ï¿½
+/// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ HandleClick Í³Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ß´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å±ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½Ô¼ï¿½ï¿½ï¿½ï¿½ï¿½ê¡£
 /// </summary>
 [DisallowMultipleComponent]
 public class PickupItem : MonoBehaviour
 {
-    [Header("Ê°È¡Î»ÖÃ")]
-    [Tooltip("ÎïÆ·Í£ÔÚÏà»úÕıÇ°·½¶àÔ¶£¨Ã×£©£»¿¿ÕíÕâÀà´óÎïÌå½¨Òé 0.8~1.0")]
+    [Header("Ê°È¡Î»ï¿½ï¿½")]
+    [Tooltip("ï¿½ï¿½Æ·Í£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½Ô¶ï¿½ï¿½ï¿½×£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½å½¨ï¿½ï¿½ 0.8~1.0")]
     public float focusDistance = 0.8f;
 
-    [Tooltip("Ïà¶ÔÊÓÏßÖĞĞÄµÄÏÂÒÆÁ¿£¨Ã×£©£¬±ÜÃâÍêÈ«µ²×¡×¼ĞÇ")]
+    [Tooltip("ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Äµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È«ï¿½ï¿½×¡×¼ï¿½ï¿½")]
     public float focusVerticalOffset = -0.03f;
 
-    [Header("¶¯»­")]
-    [Tooltip("ÒÆ¶¯µ½ÊÓ½ÇÖĞÑëµÄËÙ¶È")]
+    [Header("ï¿½ï¿½ï¿½ï¿½")]
+    [Tooltip("ï¿½Æ¶ï¿½ï¿½ï¿½ï¿½Ó½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ù¶ï¿½")]
     public float moveSpeed = 14f;
 
-    [Tooltip("·Å»ØÔ­Î»Ê±µÄËÙ¶È")]
+    [Tooltip("ï¿½Å»ï¿½Ô­Î»Ê±ï¿½ï¿½ï¿½Ù¶ï¿½")]
     public float returnSpeed = 12f;
 
-    [Tooltip("Ê°È¡Ê±ÊÇ·ñ¸ú×ÅÏà»ú×ª£¬ÈÃÎïÆ·Õı¶Ô¾µÍ·")]
+    [Tooltip("Ê°È¡Ê±ï¿½Ç·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ·ï¿½ï¿½ï¿½Ô¾ï¿½Í·")]
     public bool faceCamera = false;
 
-    [Tooltip("ĞèÒª¶îÍâµ÷Õû³¯ÏòÊ±ÌîÕâÀï£¨ÀıÈçÄ£ĞÍÕıÃæ³¯ -Z ¾ÍÌî 0,180,0£©")]
+    [Tooltip("ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï£¨ï¿½ï¿½ï¿½ï¿½Ä£ï¿½ï¿½ï¿½ï¿½ï¿½æ³¯ -Z ï¿½ï¿½ï¿½ï¿½ 0,180,0ï¿½ï¿½")]
     public Vector3 heldRotationEuler = Vector3.zero;
 
-    [Header("ÎïÀí")]
-    [Tooltip("ÎïÆ·ÉÏÓĞ Rigidbody Ê±£¬Ê°È¡ÆÚ¼äÁÙÊ±ÉèÎª Kinematic£¬·Å»Øºó»Ö¸´")]
+    [Header("ï¿½ï¿½ï¿½ï¿½")]
+    [Tooltip("ï¿½ï¿½Æ·ï¿½ï¿½ï¿½ï¿½ Rigidbody Ê±ï¿½ï¿½Ê°È¡ï¿½Ú¼ï¿½ï¿½ï¿½Ê±ï¿½ï¿½Îª Kinematicï¿½ï¿½ï¿½Å»Øºï¿½Ö¸ï¿½")]
     public bool handleRigidbody = true;
 
-    [Header("Åö×²Ìå")]
-    [Tooltip("Ã»ÓĞÅö×²ÌåÊ±°´Ä£ĞÍ°üÎ§ºĞ×Ô¶¯²¹Ò»¸ö£¬±£Ö¤ÄÜ±»µãµ½")]
+    [Header("ï¿½ï¿½×²ï¿½ï¿½")]
+    [Tooltip("Ã»ï¿½ï¿½ï¿½ï¿½×²ï¿½ï¿½Ê±ï¿½ï¿½Ä£ï¿½Í°ï¿½Î§ï¿½ï¿½ï¿½Ô¶ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¤ï¿½Ü±ï¿½ï¿½ãµ½")]
     public bool autoAddCollider = true;
 
-    [Header("µ÷ÊÔ")]
+    [Header("ï¿½ï¿½ï¿½ï¿½")]
     public bool debugLog = true;
 
     public bool IsHeld { get; private set; }
 
-    // È«¾ÖÖ»ÔÊĞíÄÃÒ»¼ş£¬ÄÃĞÂµÄ»á×Ô¶¯°Ñ¾ÉµÄ·Å»Ø
+    // È«ï¿½ï¿½Ö»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÂµÄ»ï¿½ï¿½Ô¶ï¿½ï¿½Ñ¾ÉµÄ·Å»ï¿½
     private static PickupItem currentHeld;
 
-    // ¡ï ¹Ø¿¨½âËø¿ª¹Ø£ºÄ¬ÈÏ¹Ø±Õ£¬½øÈë¿ÍÌü¹Ø¿¨Ê±ÓÉ LivingRoomQuest µ÷ÓÃ SetPickupEnabled(true) ¿ªÆô
+    // ï¿½ï¿½ ï¿½Ø¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø£ï¿½Ä¬ï¿½Ï¹Ø±Õ£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø¿ï¿½Ê±ï¿½ï¿½ LivingRoomQuest ï¿½ï¿½ï¿½ï¿½ SetPickupEnabled(true) ï¿½ï¿½ï¿½ï¿½
     public static bool PickupEnabled { get; private set; } = false;
 
     private Transform originalParent;
@@ -62,7 +62,7 @@ public class PickupItem : MonoBehaviour
         rb = GetComponent<Rigidbody>();
     }
 
-    /// <summary>¿ªÆô/¹Ø±ÕÈ«¾ÖÊ°È¡¡£¹ØµôÊ±»á°ÑÊÖÀïµÄÎïÆ··ÅÏÂ¡£</summary>
+    /// <summary>ï¿½ï¿½ï¿½ï¿½/ï¿½Ø±ï¿½È«ï¿½ï¿½Ê°È¡ï¿½ï¿½ï¿½Øµï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ·ï¿½ï¿½ï¿½Â¡ï¿½</summary>
     public static void SetPickupEnabled(bool value)
     {
         PickupEnabled = value;
@@ -71,7 +71,7 @@ public class PickupItem : MonoBehaviour
             currentHeld.PutBack();
     }
 
-    /// <summary>µã»÷¿ÕµØÊ±ÓÉ HandleClick µ÷ÓÃ£º·ÅÏÂÊÖÀïµÄÎïÆ·¡£</summary>
+    /// <summary>ï¿½ï¿½ï¿½ï¿½Õµï¿½Ê±ï¿½ï¿½ HandleClick ï¿½ï¿½ï¿½Ã£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ·ï¿½ï¿½</summary>
     public static void PutBackHeld()
     {
         if (currentHeld != null)
@@ -85,22 +85,22 @@ public class PickupItem : MonoBehaviour
         currentHeld = null;
     }
 
-    /// <summary>ÓÉ HandleClick ÉäÏßÃüÖĞÊ±µ÷ÓÃ¡£</summary>
+    /// <summary>ï¿½ï¿½ HandleClick ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½Ã¡ï¿½</summary>
     public void TogglePickup(Camera camera)
     {
-        // ¹Ø¿¨ÏŞÖÆ£ºÃ»½øÈë¿ÍÌü¹Ø¿¨Ö®Ç°£¬µãÁËÒ²²»»áÄÃ
+        // ï¿½Ø¿ï¿½ï¿½ï¿½ï¿½Æ£ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø¿ï¿½Ö®Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         if (!PickupEnabled)
         {
             if (debugLog)
-                Debug.Log("[PickupItem] µ±Ç°¹Ø¿¨»¹²»ÄÜÊ°È¡ÎïÆ·", this);
+                Debug.Log("[PickupItem] ï¿½ï¿½Ç°ï¿½Ø¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê°È¡ï¿½ï¿½Æ·", this);
             return;
         }
 
-        // ÕıÔÚ·É»ØÔ­Î»Ê±ºöÂÔµã»÷£¬±ÜÃâÀ´»Ø³é´¤
+        // ï¿½ï¿½ï¿½Ú·É»ï¿½Ô­Î»Ê±ï¿½ï¿½ï¿½Ôµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø³é´¤
         if (returning) return;
 
-        // ÊÖÀïÒÑ¾­ÓĞ±ğµÄÎïÆ·£º
-        // µã±ğµÄÎïÆ·²»ÔÙ"»»ÄÃ"£¬¶øÊÇ°ÑÊÖÀïµÄÕâ¸ö·ÅÏÂ
+        // ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¾ï¿½ï¿½Ğ±ï¿½ï¿½ï¿½ï¿½Æ·ï¿½ï¿½
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ·ï¿½ï¿½ï¿½ï¿½"ï¿½ï¿½ï¿½ï¿½"ï¿½ï¿½ï¿½ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         if (currentHeld != null && currentHeld != this)
         {
             currentHeld.PutBack();
@@ -113,7 +113,7 @@ public class PickupItem : MonoBehaviour
 
         if (resolved == null) return;
 
-        // Ö»ÔÊĞíÍæ¼ÒµÚÒ»ÈË³ÆÏà»úÊ°È¡£¬±ÜÃâ 2D Ğ¡ÓÎÏ·Àïµã»÷Ê±ÎóÊ°È¡ 3D ÎïÆ·
+        // Ö»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òµï¿½Ò»ï¿½Ë³ï¿½ï¿½ï¿½ï¿½Ê°È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 2D Ğ¡ï¿½ï¿½Ï·ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½Ê°È¡ 3D ï¿½ï¿½Æ·
         PlayerMover mover = FindObjectOfType<PlayerMover>();
         if (mover != null && !resolved.transform.IsChildOf(mover.transform))
             return;
@@ -158,7 +158,7 @@ public class PickupItem : MonoBehaviour
 
     private void PickUp()
     {
-        // ÒÑ¾­ÄÃ×Å±ğµÄÎïÆ·Ê±£¬ÏÈ°Ñ¾ÉµÄ·Å»ØÈ¥£¨Õı³£²»»á×ßµ½ÕâÀï£¬Èë¿ÚÒÑ´¦Àí£©
+        // ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½Å±ï¿½ï¿½ï¿½ï¿½Æ·Ê±ï¿½ï¿½ï¿½È°Ñ¾ÉµÄ·Å»ï¿½È¥ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ßµï¿½ï¿½ï¿½ï¿½ï£¬ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½ï¿½ï¿½ï¿½ï¿½
         if (currentHeld != null && currentHeld != this)
             currentHeld.PutBack();
 
@@ -172,7 +172,7 @@ public class PickupItem : MonoBehaviour
             rb.isKinematic = true;
         }
 
-        // ÍÑÀëÔ­¸¸¼¶£¬±ÜÃâ¼Ò¾ßÒÆ¶¯Ê±°ÑÎïÆ·Ò»Æğ´ø×ß
+        // ï¿½ï¿½ï¿½ï¿½Ô­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò¾ï¿½ï¿½Æ¶ï¿½Ê±ï¿½ï¿½ï¿½ï¿½Æ·Ò»ï¿½ï¿½ï¿½ï¿½ï¿½
         transform.SetParent(null, true);
 
         IsHeld = true;
@@ -180,10 +180,10 @@ public class PickupItem : MonoBehaviour
         currentHeld = this;
 
         if (debugLog)
-            Debug.Log("[PickupItem] Ê°È¡£º" + name, this);
+            Debug.Log("[PickupItem] Ê°È¡ï¿½ï¿½" + name, this);
     }
 
-    /// <summary>·Å»ØÔ­Î»£»Ò²¿ÉÒÔÓÉÍâ²¿µ÷ÓÃ¡£</summary>
+    /// <summary>ï¿½Å»ï¿½Ô­Î»ï¿½ï¿½Ò²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½â²¿ï¿½ï¿½ï¿½Ã¡ï¿½</summary>
     public void PutBack()
     {
         if (!IsHeld || returning) return;
@@ -192,7 +192,7 @@ public class PickupItem : MonoBehaviour
         if (currentHeld == this) currentHeld = null;
 
         if (debugLog)
-            Debug.Log("[PickupItem] ·Å»ØÔ­Î»£º" + name, this);
+            Debug.Log("[PickupItem] ï¿½Å»ï¿½Ô­Î»ï¿½ï¿½" + name, this);
     }
 
     private void ReturnToOrigin()
@@ -201,7 +201,7 @@ public class PickupItem : MonoBehaviour
         transform.position = Vector3.Lerp(transform.position, originalWorldPos, t);
         transform.rotation = Quaternion.Slerp(transform.rotation, originalWorldRot, t);
 
-        // »¹Ã»µ½¾Í¼ÌĞø·É
+        // ï¿½ï¿½Ã»ï¿½ï¿½ï¿½Í¼ï¿½ï¿½ï¿½ï¿½ï¿½
         if ((transform.position - originalWorldPos).sqrMagnitude > 0.0004f)
             return;
 
@@ -216,7 +216,7 @@ public class PickupItem : MonoBehaviour
         IsHeld = false;
 
         if (debugLog)
-            Debug.Log("[PickupItem] ÒÑ·Å»Ø£º" + name, this);
+            Debug.Log("[PickupItem] ï¿½Ñ·Å»Ø£ï¿½" + name, this);
     }
 
     private static Camera ResolveActiveCamera()
@@ -238,7 +238,7 @@ public class PickupItem : MonoBehaviour
 
     private void EnsureCollider()
     {
-        // Ö»ÈÏÆôÓÃÖĞµÄÅö×²Ìå£ºÓĞĞ©µ¼ÈëÄ£ĞÍ×Ô´øµÄÅö×²ÌåÊÇ½ûÓÃ×´Ì¬£¬ÉäÏß´ò²»µ½
+        // Ö»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ğµï¿½ï¿½ï¿½×²ï¿½å£ºï¿½ï¿½Ğ©ï¿½ï¿½ï¿½ï¿½Ä£ï¿½ï¿½ï¿½Ô´ï¿½ï¿½ï¿½ï¿½ï¿½×²ï¿½ï¿½ï¿½Ç½ï¿½ï¿½ï¿½×´Ì¬ï¿½ï¿½ï¿½ï¿½ï¿½ß´ò²»µï¿½
         Collider[] existing = GetComponentsInChildren<Collider>(true);
         for (int i = 0; i < existing.Length; i++)
             if (existing[i].enabled) return;
@@ -248,7 +248,7 @@ public class PickupItem : MonoBehaviour
         {
             if (debugLog)
                 Debug.LogWarning("[PickupItem] " + name +
-                    " Ã»ÓĞÆôÓÃÖĞµÄÅö×²Ìå£¬Ò²Ã»ÓĞ Renderer£¬ÎŞ·¨±»µã»÷¡£Çë°Ñ×é¼ş¹Òµ½ÓĞÄ£ĞÍµÄÎïÌåÉÏ£¬»òÊÖ¶¯¼ÓÒ»¸ö Collider¡£", this);
+                    " Ã»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ğµï¿½ï¿½ï¿½×²ï¿½å£¬Ò²Ã»ï¿½ï¿½ Rendererï¿½ï¿½ï¿½Ş·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òµï¿½ï¿½ï¿½Ä£ï¿½Íµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï£ï¿½ï¿½ï¿½ï¿½Ö¶ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ Colliderï¿½ï¿½", this);
             return;
         }
 
@@ -266,10 +266,10 @@ public class PickupItem : MonoBehaviour
             bounds.size.z / Mathf.Max(0.0001f, Mathf.Abs(lossy.z)));
 
         if (debugLog)
-            Debug.Log("[PickupItem] ÒÑÎª " + name + " ×Ô¶¯²¹µã»÷Åö×²Ìå", this);
+            Debug.Log("[PickupItem] ï¿½ï¿½Îª " + name + " ï¿½Ô¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×²ï¿½ï¿½", this);
     }
 
-    /// <summary>Ä£ĞÍÔÚÊÀ½ç¿Õ¼äµÄ°üÎ§ºĞ£¬ÓÃÓÚÅĞ¶Ïµã»÷ÂäÔÚÄÄ¸öÎïÆ·ÉÏ¡£</summary>
+    /// <summary>Ä£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Õ¼ï¿½Ä°ï¿½Î§ï¿½Ğ£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ğ¶Ïµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¸ï¿½ï¿½ï¿½Æ·ï¿½Ï¡ï¿½</summary>
     public bool TryGetWorldBounds(out Bounds bounds)
     {
         bounds = new Bounds(transform.position, Vector3.zero);
@@ -290,9 +290,9 @@ public class PickupItem : MonoBehaviour
     }
 
     /// <summary>
-    /// ÉäÏßÃüÖĞºóÕÒ¶ÔÓ¦µÄ PickupItem¡£
-    /// ÏÈÕÒÃüÖĞÎïÌå×ÔÉí/¸¸¼¶£»Èç¹ûÃüÖĞµÄÊÇÍâ²ãÕûÌåÅö×²Ìå£¨É³·¢¡¢×À×Ó¡¢µ¼ÈëÄ£ĞÍµÄºÏ²¢Åö×²Ìå£©£¬
-    /// ÔÙÖğ¼¶ÍùÉÏ£¬ÕÒ°üÎ§ºĞÀëµã»÷µã×î½ü¡¢ÇÒÔÚÈİ²î·¶Î§ÄÚµÄÎïÆ·¡£
+    /// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ğºï¿½ï¿½Ò¶ï¿½Ó¦ï¿½ï¿½ PickupItemï¿½ï¿½
+    /// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½/ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ğµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×²ï¿½å£¨É³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¡ï¿½ï¿½ï¿½ï¿½ï¿½Ä£ï¿½ÍµÄºÏ²ï¿½ï¿½ï¿½×²ï¿½å£©ï¿½ï¿½
+    /// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï£ï¿½ï¿½Ò°ï¿½Î§ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½İ²î·¶Î§ï¿½Úµï¿½ï¿½ï¿½Æ·ï¿½ï¿½
     /// </summary>
     public static PickupItem FindAtClick(RaycastHit hit, float tolerance)
     {
