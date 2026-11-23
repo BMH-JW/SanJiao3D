@@ -10225,51 +10225,6 @@ Transform:
   - {fileID: 39485606}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &933483408
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 933483410}
-  - component: {fileID: 933483409}
-  m_Layer: 0
-  m_Name: " \u97F3\u4E50"
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &933483409
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 933483408}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b9e87d274fb6e294cb3d71feca111f2b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  music: {fileID: 8300000, guid: 427879cded0c8b84d89d1bcade7c7e4a, type: 3}
---- !u!4 &933483410
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 933483408}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 960, y: 540, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &947427402 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7675662131598449957, guid: 26648a6d7332c8e459664de7502ff8f6,
@@ -20857,6 +20812,51 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 2.3982608, y: 0.021770017, z: 2.23983}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!1 &1754506838
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1754506840}
+  - component: {fileID: 1754506839}
+  m_Layer: 0
+  m_Name: " \u97F3\u4E50"
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1754506839
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1754506838}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b9e87d274fb6e294cb3d71feca111f2b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  music: {fileID: 8300000, guid: 427879cded0c8b84d89d1bcade7c7e4a, type: 3}
+--- !u!4 &1754506840
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1754506838}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 1390.3735, y: 506.63525, z: -10.104468}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1761019181
 GameObject:
   m_ObjectHideFlags: 0
@@ -23415,6 +23415,36 @@ MonoBehaviour:
   onClosingDone:
     m_PersistentCalls:
       m_Calls: []
+  closingLineSpacing: 0.38
+  closingMoveSeconds: 0.6
+  closingMoveStagger: 0.2
+  closingHoldSeconds: 1.5
+  closingConvergeSeconds: 0.8
+  flashbangBallPrefab: {fileID: 2628539880835097591, guid: 3fd814788a788ff4bb8c10acc3eaf0a7,
+    type: 3}
+  flashbangScreenSize: 160
+  flashWhiteFadeSeconds: 0.4
+  narrationFont: {fileID: 12800000, guid: 2005793c52a8747409255568873bb95a, type: 3}
+  narrationColor: {r: 0, g: 0, b: 0, a: 1}
+  narrationFadeSeconds: 0.5
+  narrationLineSeconds: 3
+  narrationLineGapSeconds: 0.3
+  narrationFontSize: 40
+  goodEndingNarration:
+  - "\u4ECA\u665A\uFF0C\u627E\u4E0A\u95E8\u7684\u60C5\u7EEA\u4F3C\u4E4E\u90FD\u5F88\u53CB\u597D"
+  - "\u4E0D\u5FC5\u6293\u4F4F\u6240\u6709\u5FEB\u4E50\u4E0D\u80AF\u653E\u624B"
+  - "\u4E5F\u4E0D\u7528\u523B\u610F\u7559\u4F4F\u8FD9\u4EFD\u6696\u610F"
+  - " \u597D\u597D\u611F\u53D7\u6B64\u523B\u7684\u677E\u5F1B"
+  - " \u548C\u81EA\u5DF1\u76F8\u62E5"
+  - "\u5B89\u5FC3\u5165\u7720\u5427"
+  - " \u6BCF\u4E00\u4E2A\u5E73\u51E1\u7684\u591C\u665A\u90FD\u503C\u5F97\u88AB\u559C\u6B22"
+  badEndingNarration:
+  - "\u4F60\u5E26\u7740\u4E00\u8DEF\u7684\u59D4\u5C48\uFF0C\u6162\u6162\u5B66\u4F1A\u4E86\u548C\u81EA\u5DF1\u548C\u89E3\u3002"
+  mixedEndingNarration:
+  - "\u5F00\u5FC3\u548C\u96BE\u8FC7\u90FD\u6536\u597D\u4E86\uFF0C\u8FD9\u624D\u662F\u5B8C\u6574\u7684\u4E00\u5929\u3002"
+  endingMusic: {fileID: 8300000, guid: c661966631504fa4b9170b58abb52dab, type: 3}
+  endingMusicFadeSeconds: 2
+  endingMusicVolume: 0.6
   alwaysRenderOnTop: 1
   overlayLayer: 31
   debugLog: 1
@@ -24380,4 +24410,4 @@ SceneRoots:
   - {fileID: 47323992}
   - {fileID: 1015607224}
   - {fileID: 1958466815}
-  - {fileID: 933483410}
+  - {fileID: 1754506840}

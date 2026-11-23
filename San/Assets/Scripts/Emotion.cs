@@ -184,8 +184,82 @@ public class EmotionRewardFly : MonoBehaviour
     [Tooltip("背包完全隐藏后触发（例如播字幕、切场景）")]
     public UnityEvent onClosingDone;
 
+    [Header("闭幕中场：三球列队 → 合拢 → 闪光弹")]
+    [Tooltip("左右两球离屏幕中央的距离（占屏幕宽度的比例，0.5 = 贴到屏幕边缘）")]
+    [Range(0.05f, 0.5f)]
+    public float closingLineSpacing = 0.38f;
+
+    [Tooltip("每个球移动到指定位置的时间（秒）")]
+    public float closingMoveSeconds = 0.6f;
+
+    [Tooltip("三个球依次出发的间隔（秒）")]
+    public float closingMoveStagger = 0.2f;
+
+    [Tooltip("三个球站好后等待多久再向中间靠齐（秒）")]
+    public float closingHoldSeconds = 1.5f;
+
+    [Tooltip("左右两个球向中间靠齐的时间（秒）")]
+    public float closingConvergeSeconds = 0.8f;
+
+    [Tooltip("三球合拢后切换成的闪光弹预制体")]
+    public GameObject flashbangBallPrefab;
+
+    [Tooltip("闪光弹在屏幕上的直径（像素）")]
+    public float flashbangScreenSize = 160f;
+
+    [Header("闪光弹白场 + 结局旁白")]
+    [Tooltip("闪白到全白所需时间（秒）")]
+    public float flashWhiteFadeSeconds = 0.4f;
+
+    [Tooltip("旁白字体（字魂夏日诗歌体）")]
+    public Font narrationFont;
+
+    [Tooltip("旁白文字颜色")]
+    public Color narrationColor = Color.black;
+
+    [Tooltip("每一句的淡入、淡出时间（秒）")]
+    public float narrationFadeSeconds = 0.5f;
+
+    [Tooltip("每一句停留多久（秒），到时自动淡出，再播下一句")]
+    public float narrationLineSeconds = 3f;
+
+    [Tooltip("上一句消失后停顿多久再播下一句（秒）")]
+    public float narrationLineGapSeconds = 0.3f;
+
+    [Tooltip("旁白字号")]
+    public int narrationFontSize = 40;
+
+    [Header("结局旁白（可手动添加多句）")]
+    [Tooltip("好的情绪球大于 2 个时，按顺序逐句播放")]
+    [TextArea(1, 3)]
+    public List<string> goodEndingNarration = new List<string>();
+
+    [Tooltip("坏的情绪球大于 2 个时，按顺序逐句播放")]
+    [TextArea(1, 3)]
+    public List<string> badEndingNarration = new List<string>();
+
+    [Tooltip("好坏混合时，按顺序逐句播放")]
+    [TextArea(1, 3)]
+    public List<string> mixedEndingNarration = new List<string>();
+
+    [Header("结尾音乐")]
+    [Tooltip("进入黑屏时切换播放的结尾音乐（Assets/Music/结尾.mp3）")]
+    public AudioClip endingMusic;
+
+    [Tooltip("结尾音乐淡入、以及原音乐淡出的时长（秒）")]
+    public float endingMusicFadeSeconds = 2f;
+
+    [Range(0f, 1f)]
+    [Tooltip("结尾音乐音量")]
+    public float endingMusicVolume = 0.6f;
+
     private bool closingMode;
     private bool closingStarted;
+    private bool endingSequence;
+
+    private CanvasGroup endingWhiteGroup;
+    private Text endingNarrationText;
+    private AudioSource endingMusicSource;
 
     [Header("置顶渲染")]
     [Tooltip("情绪球始终显示在所有 3D 物体前面，不会被墙/家具挡住")]
@@ -206,6 +280,7 @@ public class EmotionRewardFly : MonoBehaviour
     {
         public Transform transform;
         public float diameter;
+        public bool happy;
     }
 
     private readonly List<LandedBall> landedBalls =
@@ -727,6 +802,9 @@ public class EmotionRewardFly : MonoBehaviour
 
             if (!visible) continue;
 
+            // 闭幕中场动画自己接管位置，这里不要再把球拉回背包
+            if (endingSequence) continue;
+
             PlaceLandedBall(entry, activeCam, i);
         }
     }
@@ -1061,7 +1139,8 @@ public class EmotionRewardFly : MonoBehaviour
         LandedBall entry = new LandedBall
         {
             transform = ball.transform,
-            diameter = MeasureDiameter(ball)
+            diameter = MeasureDiameter(ball),
+            happy = happy
         };
 
         landedBalls.Add(entry);
@@ -1146,6 +1225,15 @@ public class EmotionRewardFly : MonoBehaviour
         // 1. 进入闭幕模式：LateUpdate 里球不再跟随背包显隐
         closingMode = true;
 
+        // 1.2 黑屏后切到 2D 演出：冻结玩家移动和鼠标视角，避免画面跳动
+        FreezePlayerForEnding();
+
+        // 1.3 切换结尾音乐：原音乐淡出，结尾音乐淡入
+        PlayEndingMusic();
+
+        // 1.5 让黑幕排到情绪球的置顶相机之前，球才会留在黑幕上方
+        SendMaskBehindBallOverlay();
+
         // 2. 通知外部
         onClosingStart?.Invoke();
 
@@ -1220,6 +1308,578 @@ public class EmotionRewardFly : MonoBehaviour
                 landedBalls.Count + " 个）",
                 this);
         }
+
+        // 7. 三球列队 → 合拢 → 闪光弹
+        StartCoroutine(EndingBallSequenceRoutine());
+    }
+
+    // ====================================================================
+    // 把闭幕黑幕放到情绪球置顶相机之前
+    // ====================================================================
+
+    /// <summary>
+    /// 黑幕原本是 Screen Space - Overlay 画布，会画在所有相机（包括情绪球的
+    /// 置顶相机）之后，所以球会被盖住。改成 Screen Space - Camera 后，黑幕由
+    /// 主相机渲染，置顶相机在其后渲染，球就一直在黑幕上方。
+    /// </summary>
+    private void SendMaskBehindBallOverlay()
+    {
+        if (closingFadeMask == null) return;
+
+        // 没有置顶相机时球本来就在主相机里，改了也挡不住，直接跳过
+        if (overlayCam == null) return;
+
+        Canvas maskCanvas = closingFadeMask.GetComponentInParent<Canvas>();
+
+        if (maskCanvas == null) return;
+
+        Camera active = ActiveCamera();
+
+        if (active == null) return;
+
+        if (maskCanvas.renderMode != RenderMode.ScreenSpaceCamera)
+            maskCanvas.renderMode = RenderMode.ScreenSpaceCamera;
+
+        maskCanvas.worldCamera = active;
+
+        // 贴近近裁剪面，避免有物体刚好钻到黑幕前面
+        maskCanvas.planeDistance =
+            Mathf.Max(0.01f, active.nearClipPlane + 0.01f);
+    }
+
+    // ====================================================================
+    // 闭幕中场：三球依次移动到屏幕中间 → 向中间靠齐 → 闪光弹
+    // ====================================================================
+
+    private IEnumerator EndingBallSequenceRoutine()
+    {
+        endingSequence = true;
+
+        yield return null;
+
+        Camera active = ActiveCamera();
+
+        if (active == null || landedBalls.Count < 3)
+        {
+            if (debugLog)
+            {
+                Debug.LogWarning(
+                    "[Emotion] 闭幕中场需要 3 个情绪球，当前 " +
+                    landedBalls.Count + " 个，跳过列队动画",
+                    this);
+            }
+
+            endingSequence = false;
+            yield break;
+        }
+
+        // 三球统一挂到相机下，用局部坐标做动画，镜头再动也不会跑位
+        for (int i = 0; i < landedBalls.Count; i++)
+        {
+            if (landedBalls[i] != null && landedBalls[i].transform != null)
+                landedBalls[i].transform.SetParent(active.transform, true);
+        }
+
+        // 第一个 → 中间右边，第二个 → 正中央，第三个 → 中间左边
+        Vector2 center = new Vector2(
+            Screen.width * 0.5f,
+            Screen.height * 0.5f);
+
+        // 按屏幕宽度的比例撑开，三个球接近占满整个屏幕
+        float spacing =
+            Mathf.Clamp(closingLineSpacing, 0.05f, 0.5f) * Screen.width;
+
+        Vector2[] targets =
+        {
+            center + new Vector2(spacing, 0f),
+            center,
+            center - new Vector2(spacing, 0f)
+        };
+
+        // 依次移动到对应位置
+        for (int i = 0; i < 3; i++)
+        {
+            LandedBall ball = landedBalls[i];
+
+            if (ball == null || ball.transform == null) continue;
+
+            yield return MoveBallToLocal(
+                ball.transform,
+                active,
+                targets[i],
+                closingMoveSeconds);
+
+            if (closingMoveStagger > 0f)
+                yield return new WaitForSecondsRealtime(closingMoveStagger);
+        }
+
+        // 站好后等待 1~2 秒
+        if (closingHoldSeconds > 0f)
+            yield return new WaitForSecondsRealtime(closingHoldSeconds);
+
+        // 左右两个球向中间靠齐（第二个本来就在中间）
+        Coroutine rightBall = null;
+        Coroutine leftBall = null;
+
+        if (landedBalls[0] != null && landedBalls[0].transform != null)
+        {
+            rightBall = StartCoroutine(
+                MoveBallToLocal(
+                    landedBalls[0].transform,
+                    active,
+                    center,
+                    closingConvergeSeconds));
+        }
+
+        if (landedBalls[2] != null && landedBalls[2].transform != null)
+        {
+            leftBall = StartCoroutine(
+                MoveBallToLocal(
+                    landedBalls[2].transform,
+                    active,
+                    center,
+                    closingConvergeSeconds));
+        }
+
+        if (rightBall != null) yield return rightBall;
+        if (leftBall != null) yield return leftBall;
+
+        // 统计好坏情绪球，决定用哪段旁白（要在清空前统计）
+        int goodCount = 0;
+        int badCount = 0;
+
+        for (int i = 0; i < landedBalls.Count; i++)
+        {
+            if (landedBalls[i] == null) continue;
+
+            if (landedBalls[i].happy) goodCount++;
+            else badCount++;
+        }
+
+        // 三球合拢后切换成闪光弹
+        SpawnFlashbang(active);
+
+        // 闪光弹爆白 → 全白 → 播放对应结局旁白
+        yield return PlayFlashbangEnding(goodCount, badCount);
+
+        endingSequence = false;
+    }
+
+    private IEnumerator MoveBallToLocal(
+        Transform ball,
+        Camera activeCam,
+        Vector2 screenPos,
+        float duration)
+    {
+        if (ball == null || activeCam == null) yield break;
+
+        Vector3 start = ball.localPosition;
+        Vector3 end = LocalFromScreen(activeCam, screenPos);
+
+        float d = Mathf.Max(0.0001f, duration);
+        float t = 0f;
+
+        while (t < d)
+        {
+            t += Time.unscaledDeltaTime;
+
+            float k = Mathf.Clamp01(t / d);
+            k = k * k * (3f - 2f * k); // 平滑进出
+
+            if (ball == null) yield break;
+
+            ball.localPosition = Vector3.LerpUnclamped(start, end, k);
+
+            yield return null;
+        }
+
+        if (ball != null)
+            ball.localPosition = end;
+    }
+
+    private Vector3 LocalFromScreen(Camera activeCam, Vector2 screenPos)
+    {
+        Vector3 world = activeCam.ScreenToWorldPoint(
+            new Vector3(
+                screenPos.x,
+                screenPos.y,
+                landedDistance));
+
+        return activeCam.transform.InverseTransformPoint(world);
+    }
+
+    private void SpawnFlashbang(Camera activeCam)
+    {
+        // 先收掉三个小球
+        for (int i = 0; i < landedBalls.Count; i++)
+        {
+            if (landedBalls[i] != null && landedBalls[i].transform != null)
+                Destroy(landedBalls[i].transform.gameObject);
+        }
+
+        landedBalls.Clear();
+
+        if (flashbangBallPrefab == null)
+        {
+            Debug.LogWarning(
+                "[Emotion] 闪光弹预制体没拖，无法切换",
+                this);
+            return;
+        }
+
+        Camera camRef = activeCam != null ? activeCam : ActiveCamera();
+
+        GameObject ball = Instantiate(flashbangBallPrefab);
+        ball.name = "EmotionBall_Flashbang";
+        ball.SetActive(true);
+
+        if (alwaysRenderOnTop)
+        {
+            EnsureOverlayCamera();
+            SetLayerRecursively(ball, overlayLayer);
+        }
+
+        if (camRef != null)
+        {
+            ball.transform.SetParent(camRef.transform, false);
+            ball.transform.localPosition =
+                new Vector3(0f, 0f, landedDistance);
+            ball.transform.localRotation = Quaternion.identity;
+
+            float worldPerPixel =
+                2f * landedDistance *
+                Mathf.Tan(
+                    camRef.fieldOfView *
+                    0.5f * Mathf.Deg2Rad) /
+                Mathf.Max(1, Screen.height);
+
+            float diameter =
+                Mathf.Max(0.0001f, MeasureDiameter(ball));
+
+            ball.transform.localScale =
+                Vector3.one *
+                Mathf.Max(
+                    0.0001f,
+                    Mathf.Max(1f, flashbangScreenSize) *
+                    worldPerPixel / diameter);
+        }
+        else
+        {
+            ball.transform.position = transform.position;
+            ball.transform.localScale =
+                Vector3.one * Mathf.Max(0.01f, landedScale);
+        }
+
+        if (landedSpin)
+            StartCoroutine(SpinLanded(ball.transform));
+
+        if (debugLog)
+            Debug.Log("[Emotion] 三球合拢，已切换成闪光弹", ball);
+    }
+
+    // ====================================================================
+    // 黑屏后冻结玩家 → 闪白 → 结局旁白
+    // ====================================================================
+
+    private void FreezePlayerForEnding()
+    {
+        PlayerMover pm = FindObjectOfType<PlayerMover>(true);
+
+        if (pm == null) return;
+
+        // 关掉移动和鼠标视角，画面变成固定的 2D 演出；光标保持隐藏
+        pm.SetControl(false, false);
+        pm.LockCursor(true);
+
+        if (debugLog)
+            Debug.Log("[Emotion] 闭幕开始，已冻结玩家视角", this);
+    }
+
+    // ====================================================================
+    // 结尾音乐（交叉淡入淡出）
+    // ====================================================================
+
+    private void PlayEndingMusic()
+    {
+        if (endingMusic == null) return;
+
+        float fade = Mathf.Max(0.01f, endingMusicFadeSeconds);
+
+        // 当前场景音乐先淡出，和结尾音乐形成交叉淡入淡出
+        if (SceneFader.Instance != null)
+            SceneFader.Instance.StopMusic(fade);
+
+        if (endingMusicSource == null)
+        {
+            GameObject go = new GameObject("EndingMusic");
+            DontDestroyOnLoad(go);
+
+            endingMusicSource = go.AddComponent<AudioSource>();
+            endingMusicSource.playOnAwake = false;
+            endingMusicSource.loop = true;
+            endingMusicSource.spatialBlend = 0f;
+        }
+
+        endingMusicSource.clip = endingMusic;
+        endingMusicSource.volume = 0f;
+        endingMusicSource.Play();
+
+        StartCoroutine(FadeEndingMusic(endingMusicVolume, fade));
+
+        if (debugLog)
+            Debug.Log("[Emotion] 已切换结尾音乐：" + endingMusic.name, this);
+    }
+
+    private IEnumerator FadeEndingMusic(float target, float duration)
+    {
+        if (endingMusicSource == null) yield break;
+
+        float d = Mathf.Max(0.0001f, duration);
+        float t = 0f;
+
+        while (t < d)
+        {
+            t += Time.unscaledDeltaTime;
+
+            if (endingMusicSource == null) yield break;
+
+            endingMusicSource.volume =
+                Mathf.Lerp(0f, target, Mathf.Clamp01(t / d));
+
+            yield return null;
+        }
+
+        if (endingMusicSource != null)
+            endingMusicSource.volume = target;
+    }
+
+    /// <summary>淡出结尾音乐（例如以后要接字幕结束、返回主菜单时调用）。</summary>
+    public void FadeOutEndingMusic(float duration = 2f)
+    {
+        if (endingMusicSource == null) return;
+
+        StartCoroutine(FadeOutEndingMusicRoutine(duration));
+    }
+
+    private IEnumerator FadeOutEndingMusicRoutine(float duration)
+    {
+        float from = endingMusicSource.volume;
+        float d = Mathf.Max(0.0001f, duration);
+        float t = 0f;
+
+        while (t < d)
+        {
+            t += Time.unscaledDeltaTime;
+
+            if (endingMusicSource == null) yield break;
+
+            endingMusicSource.volume =
+                Mathf.Lerp(from, 0f, Mathf.Clamp01(t / d));
+
+            yield return null;
+        }
+
+        if (endingMusicSource != null)
+        {
+            endingMusicSource.Stop();
+            endingMusicSource.volume = 0f;
+        }
+    }
+
+    private IEnumerator PlayFlashbangEnding(int goodCount, int badCount)
+    {
+        CanvasGroup white = EnsureEndingWhiteCanvas();
+
+        if (white == null) yield break;
+
+        // 闪光弹爆开：快速泛白
+        float d = Mathf.Max(0.01f, flashWhiteFadeSeconds);
+        float t = 0f;
+
+        while (t < d)
+        {
+            t += Time.unscaledDeltaTime;
+
+            float k = Mathf.Clamp01(t / d);
+            k = k * k; // 先慢后快，像闪光弹炸开
+
+            white.alpha = Mathf.Lerp(0f, 1f, k);
+
+            yield return null;
+        }
+
+        white.alpha = 1f;
+
+        // 全白之后按顺序逐句播放对应结局旁白
+        List<string> lines = ResolveEndingNarration(goodCount, badCount);
+
+        if (endingNarrationText == null || lines == null || lines.Count == 0)
+            yield break;
+
+        for (int i = 0; i < lines.Count; i++)
+        {
+            string line = lines[i];
+
+            if (string.IsNullOrEmpty(line)) continue;
+
+            // 上一句淡出、消失并停顿后才会走到下一句
+            yield return ShowNarrationLine(line);
+        }
+
+        if (debugLog)
+        {
+            Debug.Log(
+                "[Emotion] 结局旁白：好=" + goodCount +
+                "，坏=" + badCount +
+                "，共 " + lines.Count + " 句",
+                this);
+        }
+    }
+
+    private IEnumerator ShowNarrationLine(string line)
+    {
+        if (endingNarrationText == null) yield break;
+
+        endingNarrationText.text = line;
+
+        Color color = narrationColor;
+        color.a = 0f;
+        endingNarrationText.color = color;
+
+        float fade = Mathf.Max(0.01f, narrationFadeSeconds);
+        float t = 0f;
+
+        // 淡入
+        while (t < fade)
+        {
+            t += Time.unscaledDeltaTime;
+
+            color.a = Mathf.Clamp01(t / fade);
+            endingNarrationText.color = color;
+
+            yield return null;
+        }
+
+        color.a = 1f;
+        endingNarrationText.color = color;
+
+        // 停留
+        if (narrationLineSeconds > 0f)
+            yield return new WaitForSecondsRealtime(narrationLineSeconds);
+
+        // 淡出
+        t = 0f;
+
+        while (t < fade)
+        {
+            t += Time.unscaledDeltaTime;
+
+            color.a = 1f - Mathf.Clamp01(t / fade);
+            endingNarrationText.color = color;
+
+            yield return null;
+        }
+
+        color.a = 0f;
+        endingNarrationText.color = color;
+
+        // 完全消失后再停顿，然后才轮到下一句
+        if (narrationLineGapSeconds > 0f)
+            yield return new WaitForSecondsRealtime(narrationLineGapSeconds);
+    }
+
+    private List<string> ResolveEndingNarration(int goodCount, int badCount)
+    {
+        // 好/坏任意一方大于 2 个，用对应的一组文案
+        if (goodCount > 2 && goodEndingNarration.Count > 0)
+            return goodEndingNarration;
+
+        if (badCount > 2 && badEndingNarration.Count > 0)
+            return badEndingNarration;
+
+        // 三个球里好坏混合（例如 2:1）时按多数决定
+        if (goodCount > badCount && goodEndingNarration.Count > 0)
+            return goodEndingNarration;
+
+        if (badCount > goodCount && badEndingNarration.Count > 0)
+            return badEndingNarration;
+
+        if (mixedEndingNarration.Count > 0)
+            return mixedEndingNarration;
+
+        // 兜底：谁有文案就用谁
+        if (goodEndingNarration.Count > 0)
+            return goodEndingNarration;
+
+        if (badEndingNarration.Count > 0)
+            return badEndingNarration;
+
+        return null;
+    }
+
+    private CanvasGroup EnsureEndingWhiteCanvas()
+    {
+        if (endingWhiteGroup != null) return endingWhiteGroup;
+
+        GameObject canvasGo = new GameObject(
+            "Ending_WhiteCanvas",
+            typeof(Canvas),
+            typeof(CanvasScaler),
+            typeof(GraphicRaycaster));
+
+        Canvas canvas = canvasGo.GetComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        // 高于普通 UI、低于 SceneFader 的 32767，切场景时黑幕仍能盖住
+        canvas.sortingOrder = 32000;
+
+        GameObject imageGo = new GameObject(
+            "Ending_WhiteImage",
+            typeof(Image));
+
+        imageGo.transform.SetParent(canvasGo.transform, false);
+
+        Image image = imageGo.GetComponent<Image>();
+        image.color = Color.white;
+        image.raycastTarget = false;
+
+        RectTransform imageRect = image.rectTransform;
+        imageRect.anchorMin = Vector2.zero;
+        imageRect.anchorMax = Vector2.one;
+        imageRect.offsetMin = Vector2.zero;
+        imageRect.offsetMax = Vector2.zero;
+
+        endingWhiteGroup = canvasGo.AddComponent<CanvasGroup>();
+        endingWhiteGroup.alpha = 0f;
+        endingWhiteGroup.blocksRaycasts = false;
+        endingWhiteGroup.interactable = false;
+
+        GameObject textGo = new GameObject(
+            "Ending_Narration",
+            typeof(Text));
+
+        textGo.transform.SetParent(canvasGo.transform, false);
+
+        Text text = textGo.GetComponent<Text>();
+        text.font = narrationFont != null
+            ? narrationFont
+            : Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        text.fontStyle = FontStyle.Bold;
+        text.fontSize = Mathf.Max(1, narrationFontSize);
+        text.alignment = TextAnchor.MiddleCenter;
+        text.color = narrationColor;
+        text.raycastTarget = false;
+        text.horizontalOverflow = HorizontalWrapMode.Wrap;
+        text.verticalOverflow = VerticalWrapMode.Overflow;
+
+        RectTransform textRect = text.rectTransform;
+        textRect.anchorMin = new Vector2(0.12f, 0.2f);
+        textRect.anchorMax = new Vector2(0.88f, 0.8f);
+        textRect.offsetMin = Vector2.zero;
+        textRect.offsetMax = Vector2.zero;
+
+        endingNarrationText = text;
+
+        return endingWhiteGroup;
     }
 
     // ====================================================================

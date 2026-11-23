@@ -155,6 +155,10 @@ public class AudioVolumeController : MonoBehaviour
             if (source == null) continue;
             if (HasChannel(source)) continue;
 
+            // 常驻物体（如 SceneFader 的背景音乐）由它自己控制音量，
+            // 不要收进来，否则淡入时捕获到的 0 会被每帧写回去，音乐永远听不到
+            if (source.gameObject.scene.name == "DontDestroyOnLoad") continue;
+
             channels.Add(new AudioChannel
             {
                 name = source.gameObject.name,
