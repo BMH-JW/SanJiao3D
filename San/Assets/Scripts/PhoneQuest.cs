@@ -5,113 +5,113 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// ÇéĞ÷ÇòÊÕ¼¯Íê³Éºó£º
-/// ÊÖ»úÕğ¶¯/ÏìÁå ¡ú µ¯³öÁ½¾äËéËéÄî ¡ú Íæ¼Ò¿¿½üºóÇĞ»»µ½µÚËÄ¸ö¾µÍ·²¢ÉÁÆÁ ¡ú
-/// µã»÷ÊÖ»ú ¡ú ´ò¿ªÍ¬³¡¾°ÖĞµÄ 2D Ãæ°å¡£
+/// æƒ…ç»ªçƒæ”¶é›†å®Œæˆåï¼š
+/// æ‰‹æœºéœ‡åŠ¨/å“é“ƒ â†’ å¼¹å‡ºä¸¤å¥ç¢ç¢å¿µ â†’ ç©å®¶é è¿‘ååˆ‡æ¢åˆ°ç¬¬å››ä¸ªé•œå¤´å¹¶é—ªå± â†’
+/// ç‚¹å‡»æ‰‹æœº â†’ æ‰“å¼€åŒåœºæ™¯ä¸­çš„ 2D é¢æ¿ã€‚
 /// </summary>
 public class PhoneQuest : MonoBehaviour
 {
-    [Header("ÊÖ»úÎïÌå")]
-    [Tooltip("ĞèÒªÕğ¶¯µÄÊÖ»úÄ£ĞÍ£¬½¨ÒéÍÏÄ£ĞÍ×ÓÎïÌå")]
+    [Header("æ‰‹æœºç‰©ä½“")]
+    [Tooltip("éœ€è¦éœ‡åŠ¨çš„æ‰‹æœºæ¨¡å‹ï¼Œå»ºè®®æ‹–æ¨¡å‹å­ç‰©ä½“")]
     public Transform visualToVibrate;
 
-    [Tooltip("¶ÀÁ¢µÄÊÖ»úÆÁÄ» Renderer")]
+    [Tooltip("ç‹¬ç«‹çš„æ‰‹æœºå±å¹• Renderer")]
     public Renderer screenRenderer;
 
-    [Tooltip("Æ½Ê±µÄÆÁÄ»²ÄÖÊ")]
+    [Tooltip("å¹³æ—¶çš„å±å¹•æè´¨")]
     public Material screenNormalMaterial;
 
-    [Tooltip("¿¿½üºóÉÁË¸Ê¹ÓÃµÄÁÁÆÁ²ÄÖÊ")]
+    [Tooltip("é è¿‘åé—ªçƒä½¿ç”¨çš„äº®å±æè´¨")]
     public Material screenFlashMaterial;
 
-    [Header("Õğ¶¯")]
-    [Tooltip("Î»ÖÃÕğ¶¯·ù¶È£¬µ¥Î»Ã×")]
+    [Header("éœ‡åŠ¨")]
+    [Tooltip("ä½ç½®éœ‡åŠ¨å¹…åº¦ï¼Œå•ä½ç±³")]
     public float vibrationAmplitude = 0.006f;
 
-    [Tooltip("Õğ¶¯Ê±µÄĞı×ª½Ç¶È")]
+    [Tooltip("éœ‡åŠ¨æ—¶çš„æ—‹è½¬è§’åº¦")]
     public float vibrationAngle = 1.5f;
 
     public float vibrationSpeed = 32f;
 
-    [Tooltip("ÕæÊµÒÆ¶¯Éè±¸ÊÇ·ñÒ²Õğ¶¯Ò»´Î£¬µçÄÔÉÏÎŞĞ§")]
+    [Tooltip("çœŸå®ç§»åŠ¨è®¾å¤‡æ˜¯å¦ä¹Ÿéœ‡åŠ¨ä¸€æ¬¡ï¼Œç”µè„‘ä¸Šæ— æ•ˆ")]
     public bool vibrateRealDevice = false;
 
-    [Header("ÁåÉù")]
-    [Tooltip("Ö±½Ó°ÑÒôÆµÎÄ¼şÍÏµ½ÕâÀï£¨AudioClip£©")]
+    [Header("é“ƒå£°")]
+    [Tooltip("ç›´æ¥æŠŠéŸ³é¢‘æ–‡ä»¶æ‹–åˆ°è¿™é‡Œï¼ˆAudioClipï¼‰")]
     public AudioClip ringClip;
 
-    [Tooltip("¿ÉÑ¡£ºÁô¿Õ»á×Ô¶¯ÔÚÊÖ»úÉÏ´´½¨ AudioSource")]
+    [Tooltip("å¯é€‰ï¼šç•™ç©ºä¼šè‡ªåŠ¨åœ¨æ‰‹æœºä¸Šåˆ›å»º AudioSource")]
     public AudioSource ringAudio;
 
     public float ringVolume = 1f;
 
-    [Tooltip("0 = 2D ÒôÁ¿£¬1 = 3D Ëæ¾àÀëË¥¼õ")]
+    [Tooltip("0 = 2D éŸ³é‡ï¼Œ1 = 3D éšè·ç¦»è¡°å‡")]
     public float ringSpatialBlend = 1f;
 
-    [Header("¿¿½üÊ±ÇĞ»»¾µÍ·")]
+    [Header("é è¿‘æ—¶åˆ‡æ¢é•œå¤´")]
     public bool switchCameraWhenNear = true;
 
-    [Tooltip("¿¿½üÊÖ»úÊ±ÇĞ»»µ½µÄµÚËÄ¸ö¾µÍ·£¬ÍÏ Camera ×é¼ş")]
+    [Tooltip("é è¿‘æ‰‹æœºæ—¶åˆ‡æ¢åˆ°çš„ç¬¬å››ä¸ªé•œå¤´ï¼Œæ‹– Camera ç»„ä»¶")]
     public Camera approachCamera;
 
-    [Tooltip("Approach Camera Áô¿ÕÊ±£¬°´ÕâĞ©Ãû×Ö×Ô¶¯ÕÒ")]
+    [Tooltip("Approach Camera ç•™ç©ºæ—¶ï¼ŒæŒ‰è¿™äº›åå­—è‡ªåŠ¨æ‰¾")]
     public string[] approachCameraNames =
-        new string[] { "Camera4", "Camera (4)", "Camera_4", "¾µÍ·4" };
+        new string[] { "Camera4", "Camera (4)", "Camera_4", "é•œå¤´4" };
 
-    [Header("¿¿½üÓëµã»÷")]
-    [Tooltip("Íæ¼Ò£¬Áô¿Õ×Ô¶¯ÕÒ PlayerMover")]
+    [Header("é è¿‘ä¸ç‚¹å‡»")]
+    [Tooltip("ç©å®¶ï¼Œç•™ç©ºè‡ªåŠ¨æ‰¾ PlayerMover")]
     public Transform player;
 
-    [Tooltip("µã»÷¼ì²âÊ¹ÓÃµÄÏà»ú£¬Áô¿Õ×Ô¶¯ÕÒ")]
+    [Tooltip("ç‚¹å‡»æ£€æµ‹ä½¿ç”¨çš„ç›¸æœºï¼Œç•™ç©ºè‡ªåŠ¨æ‰¾")]
     public Camera viewCamera;
 
-    [Tooltip("Íæ¼Ò½øÈëÕâ¸ö¾àÀëºó£¬ÇĞ»»¾µÍ·²¢¿ªÊ¼ÉÁË¸")]
+    [Tooltip("ç©å®¶è¿›å…¥è¿™ä¸ªè·ç¦»åï¼Œåˆ‡æ¢é•œå¤´å¹¶å¼€å§‹é—ªçƒ")]
     public float approachDistance = 2.2f;
 
-    [Tooltip("µã»÷ÊÖ»úµÄ×î´óÉäÏß¾àÀë")]
+    [Tooltip("ç‚¹å‡»æ‰‹æœºçš„æœ€å¤§å°„çº¿è·ç¦»")]
     public float clickDistance = 3f;
 
-    [Tooltip("ÆÁÄ»ÉÁË¸¼ä¸ô")]
+    [Tooltip("å±å¹•é—ªçƒé—´éš”")]
     public float flashInterval = 0.35f;
 
     public LayerMask clickMask = ~0;
 
-    [Header("´ò¿ªÌáÊ¾")]
-    [Tooltip("¿¿½üºóÏÔÊ¾µÄÌáÊ¾ UI£¬Ä¬ÈÏ¹Ø±Õ")]
+    [Header("æ‰“å¼€æç¤º")]
+    [Tooltip("é è¿‘åæ˜¾ç¤ºçš„æç¤º UIï¼Œé»˜è®¤å…³é—­")]
     public GameObject openPrompt;
 
-    [Tooltip("ÌáÊ¾ÎÄ×Ö£¬¿ÉÁô¿Õ×Ô¶¯ÕÒ")]
+    [Tooltip("æç¤ºæ–‡å­—ï¼Œå¯ç•™ç©ºè‡ªåŠ¨æ‰¾")]
     public Text openPromptText;
 
-    [Header("ÏìÁåËéËéÄîµ¯´°")]
-    [Tooltip("µ¯´°¸ùÎïÌå£¨UI »òÊÀ½ç¿Õ¼äÆøÅİ¶¼ĞĞ£©£¬Áô¿Õ¾Í²»µ¯")]
+    [Header("å“é“ƒç¢ç¢å¿µå¼¹çª—")]
+    [Tooltip("å¼¹çª—æ ¹ç‰©ä½“ï¼ˆUI æˆ–ä¸–ç•Œç©ºé—´æ°”æ³¡éƒ½è¡Œï¼‰ï¼Œç•™ç©ºå°±ä¸å¼¹")]
     public GameObject popupRoot;
 
-    [Tooltip("µ¯´°ÉÏµÄÎÄ×Ö×é¼ş£¬Áô¿Õ×Ô¶¯ÔÚ×ÓÎïÌåÀïÕÒ Text")]
+    [Tooltip("å¼¹çª—ä¸Šçš„æ–‡å­—ç»„ä»¶ï¼Œç•™ç©ºè‡ªåŠ¨åœ¨å­ç‰©ä½“é‡Œæ‰¾ Text")]
     public Text popupLabel;
 
-    [TextArea] public string firstPopupText = "ÚÀ£¡ÊÖ»úÏìÁË";
-    [TextArea] public string secondPopupText = "È¥¿´¿´°É";
+    [TextArea] public string firstPopupText = "è¯¶ï¼æ‰‹æœºå“äº†";
+    [TextArea] public string secondPopupText = "å»çœ‹çœ‹å§";
 
-    [Tooltip("µÚÒ»¾äÏÔÊ¾¶à¾Ã£¨Ãë£©")]
+    [Tooltip("ç¬¬ä¸€å¥æ˜¾ç¤ºå¤šä¹…ï¼ˆç§’ï¼‰")]
     public float firstPopupSeconds = 2f;
 
-    [Tooltip("Á½¾äÖ®¼äµÄ¼ä¸ô£¨Ãë£©")]
+    [Tooltip("ä¸¤å¥ä¹‹é—´çš„é—´éš”ï¼ˆç§’ï¼‰")]
     public float popupGapSeconds = 0.3f;
 
-    [Tooltip("µÚ¶ş¾äÏÔÊ¾¶à¾Ã£¨Ãë£©")]
+    [Tooltip("ç¬¬äºŒå¥æ˜¾ç¤ºå¤šä¹…ï¼ˆç§’ï¼‰")]
     public float secondPopupSeconds = 2f;
 
-    [Header("½øÈë 2D")]
-    [Tooltip("µã»÷ÊÖ»úºó´ò¿ªµÄ 2D Ãæ°å£¬Ä¬ÈÏ¹Ø±Õ")]
+    [Header("è¿›å…¥ 2D")]
+    [Tooltip("ç‚¹å‡»æ‰‹æœºåæ‰“å¼€çš„ 2D é¢æ¿ï¼Œé»˜è®¤å…³é—­")]
     public GameObject level2DPanel;
 
-    [Tooltip("½øÈë 2D Ê±Òª¹Ø±ÕµÄ 3D ¶¥²ãÎïÌå")]
+    [Tooltip("è¿›å…¥ 2D æ—¶è¦å…³é—­çš„ 3D é¡¶å±‚ç‰©ä½“")]
     public GameObject[] deactivateOn2D;
 
     public bool disablePlayerControl = true;
 
-    [Tooltip("ÓÃÓÚÒş²ØÖ®Ç°µÄÈÎÎñ HUD£¬Áô¿Õ×Ô¶¯ÕÒ")]
+    [Tooltip("ç”¨äºéšè—ä¹‹å‰çš„ä»»åŠ¡ HUDï¼Œç•™ç©ºè‡ªåŠ¨æ‰¾")]
     public TaskHUD taskHUD;
 
     public bool debugLog = true;
@@ -129,7 +129,7 @@ public class PhoneQuest : MonoBehaviour
 
     private Coroutine popupRoutine;
 
-    // ---------------- ¾µÍ·ÇĞ»»×´Ì¬ ----------------
+    // ---------------- é•œå¤´åˆ‡æ¢çŠ¶æ€ ----------------
     private class CameraState
     {
         public Camera cam;
@@ -162,12 +162,12 @@ public class PhoneQuest : MonoBehaviour
             openPromptText = openPrompt.GetComponentInChildren<Text>(true);
 
         if (openPromptText != null)
-            openPromptText.text = "µã»÷´ò¿ªÊÖ»ú";
+            openPromptText.text = "ç‚¹å‡»æ‰“å¼€æ‰‹æœº";
 
         if (openPrompt != null)
             openPrompt.SetActive(false);
 
-        // ËéËéÄîµ¯´°³õÊ¼Òş²Ø
+        // ç¢ç¢å¿µå¼¹çª—åˆå§‹éšè—
         if (popupLabel == null && popupRoot != null)
             popupLabel = popupRoot.GetComponentInChildren<Text>(true);
 
@@ -182,21 +182,21 @@ public class PhoneQuest : MonoBehaviour
         if (switchCameraWhenNear && approachCamera == null)
         {
             Debug.LogWarning(
-                "[Phone] Ã»ÕÒµ½µÚËÄ¸ö¾µÍ·£¬Çë°Ñ Camera ÍÏµ½ Approach Camera",
+                "[Phone] æ²¡æ‰¾åˆ°ç¬¬å››ä¸ªé•œå¤´ï¼Œè¯·æŠŠ Camera æ‹–åˆ° Approach Camera",
                 this);
         }
     }
 
     void OnDisable()
     {
-        // ÎïÌå±»ÒâÍâ¹Ø±ÕÊ±£¬±ğ°Ñ¾µÍ·Ò»Ö±ËøÔÚ¾µÍ·4
+        // ç‰©ä½“è¢«æ„å¤–å…³é—­æ—¶ï¼Œåˆ«æŠŠé•œå¤´ä¸€ç›´é”åœ¨é•œå¤´4
         if (cameraSwitched) RestoreCamera();
 
         HidePopup();
     }
 
     // ====================================================================
-    // ÇéĞ÷ÇòÊÕ¼¯Íê³Éºó£¬ÓÉ EmotionRewardFly µ÷ÓÃ
+    // æƒ…ç»ªçƒæ”¶é›†å®Œæˆåï¼Œç”± EmotionRewardFly è°ƒç”¨
     // ====================================================================
 
     public void StartPhoneEvent()
@@ -214,7 +214,7 @@ public class PhoneQuest : MonoBehaviour
         SetScreenFlash(false);
         PlayRing();
 
-        // ÊÖ»úÏìµÄÍ¬Ê±£¬µ¯³öÁ½¾äËéËéÄî
+        // æ‰‹æœºå“çš„åŒæ—¶ï¼Œå¼¹å‡ºä¸¤å¥ç¢ç¢å¿µ
         StopPopupRoutine();
         popupRoutine = StartCoroutine(PlayRingPopups());
 
@@ -222,19 +222,19 @@ public class PhoneQuest : MonoBehaviour
             Handheld.Vibrate();
 
         if (debugLog)
-            Debug.Log("[Phone] ÇéĞ÷ÇòÊÕ¼¯Íê³É£¬ÊÖ»ú¿ªÊ¼Õğ¶¯ + µ¯ËéËéÄî", this);
+            Debug.Log("[Phone] æƒ…ç»ªçƒæ”¶é›†å®Œæˆï¼Œæ‰‹æœºå¼€å§‹éœ‡åŠ¨ + å¼¹ç¢ç¢å¿µ", this);
 
         if (screenRenderer == null)
-            Debug.LogWarning("[Phone] Screen Renderer Ã»ÍÏ£¬ÆÁÄ»²»»áÉÁË¸", this);
+            Debug.LogWarning("[Phone] Screen Renderer æ²¡æ‹–ï¼Œå±å¹•ä¸ä¼šé—ªçƒ", this);
         else if (screenNormalMaterial == null || screenFlashMaterial == null)
-            Debug.LogWarning("[Phone] Á½¸öÆÁÄ»²ÄÖÊÃ»ÍÏÍêÕû£¬ÆÁÄ»²»»áÉÁË¸", this);
+            Debug.LogWarning("[Phone] ä¸¤ä¸ªå±å¹•æè´¨æ²¡æ‹–å®Œæ•´ï¼Œå±å¹•ä¸ä¼šé—ªçƒ", this);
     }
 
     private IEnumerator PlayRingPopups()
     {
         if (popupRoot == null) yield break;
 
-        // µÚÒ»¾ä
+        // ç¬¬ä¸€å¥
         if (popupLabel != null) popupLabel.text = firstPopupText;
         popupRoot.SetActive(true);
 
@@ -246,7 +246,7 @@ public class PhoneQuest : MonoBehaviour
         if (popupGapSeconds > 0f)
             yield return new WaitForSecondsRealtime(popupGapSeconds);
 
-        // µÚ¶ş¾ä
+        // ç¬¬äºŒå¥
         if (popupLabel != null) popupLabel.text = secondPopupText;
         popupRoot.SetActive(true);
 
@@ -277,7 +277,7 @@ public class PhoneQuest : MonoBehaviour
     {
         if (!eventStarted || opened) return;
 
-        // Õğ¶¯ºÍÁåÉùÒ»Ö±³ÖĞø£¬Óë¾àÀëÎŞ¹Ø
+        // éœ‡åŠ¨å’Œé“ƒå£°ä¸€ç›´æŒç»­ï¼Œä¸è·ç¦»æ— å…³
         ApplyVibration();
 
         bool near = IsPlayerNear();
@@ -298,7 +298,7 @@ public class PhoneQuest : MonoBehaviour
                 SwitchToApproachCamera();
 
                 if (debugLog)
-                    Debug.Log("[Phone] Íæ¼Ò¿¿½ü£¬ÇĞ¾µÍ· + ÆÁÄ»ÉÁË¸", this);
+                    Debug.Log("[Phone] ç©å®¶é è¿‘ï¼Œåˆ‡é•œå¤´ + å±å¹•é—ªçƒ", this);
             }
             else
             {
@@ -308,13 +308,13 @@ public class PhoneQuest : MonoBehaviour
                 RestoreCamera();
 
                 if (debugLog)
-                    Debug.Log("[Phone] Íæ¼ÒÔ¶Àë£¬»Ö¸´Ô­¾µÍ·", this);
+                    Debug.Log("[Phone] ç©å®¶è¿œç¦»ï¼Œæ¢å¤åŸé•œå¤´", this);
             }
         }
 
         if (!isNear) return;
 
-        // ÆÁÄ»ÉÁË¸
+        // å±å¹•é—ªçƒ
         flashTimer += Time.unscaledDeltaTime;
 
         if (flashTimer >= Mathf.Max(0.05f, flashInterval))
@@ -324,13 +324,13 @@ public class PhoneQuest : MonoBehaviour
             SetScreenFlash(flashOn);
         }
 
-        // µã»÷ÊÖ»ú
+        // ç‚¹å‡»æ‰‹æœº
         if (ClickPressed())
             TryClickPhone();
     }
 
     // ====================================================================
-    // ¾µÍ·ÇĞ»»
+    // é•œå¤´åˆ‡æ¢
     // ====================================================================
 
     private void SwitchToApproachCamera()
@@ -364,7 +364,7 @@ public class PhoneQuest : MonoBehaviour
         approachWasEnabled = approachCamera.enabled;
         approachWasActive = approachCamera.gameObject.activeSelf;
 
-        // Èç¹û¾µÍ·4 »òËüµÄ¸¸¼¶ÊÇ¹Ø±ÕµÄ£¬ÏÈ´ò¿ª
+        // å¦‚æœé•œå¤´4 æˆ–å®ƒçš„çˆ¶çº§æ˜¯å…³é—­çš„ï¼Œå…ˆæ‰“å¼€
         ActivateChain(approachCamera.transform);
 
         for (int i = 0; i < cameraStates.Count; i++)
@@ -374,7 +374,7 @@ public class PhoneQuest : MonoBehaviour
         cameraSwitched = true;
 
         if (debugLog)
-            Debug.Log("[Phone] ÒÑÇĞ»»µ½¿¿½ü¾µÍ·£º" + approachCamera.name, this);
+            Debug.Log("[Phone] å·²åˆ‡æ¢åˆ°é è¿‘é•œå¤´ï¼š" + approachCamera.name, this);
     }
 
     private void RestoreCamera()
@@ -404,7 +404,7 @@ public class PhoneQuest : MonoBehaviour
         }
 
         if (debugLog)
-            Debug.Log("[Phone] ÒÑ»Ö¸´Ô­¾µÍ·");
+            Debug.Log("[Phone] å·²æ¢å¤åŸé•œå¤´");
     }
 
     private Camera FindApproachCamera()
@@ -437,7 +437,7 @@ public class PhoneQuest : MonoBehaviour
         return null;
     }
 
-    // µã»÷ÓÃµÄÏà»ú£ºÇĞµ½¾µÍ·4 ºó¾ÍÓÃ¾µÍ·4 ·¢ÉäÏß
+    // ç‚¹å‡»ç”¨çš„ç›¸æœºï¼šåˆ‡åˆ°é•œå¤´4 åå°±ç”¨é•œå¤´4 å‘å°„çº¿
     private Camera CurrentClickCamera()
     {
         if (cameraSwitched &&
@@ -455,7 +455,7 @@ public class PhoneQuest : MonoBehaviour
     }
 
     // ====================================================================
-    // µã»÷²¢´ò¿ªÊÖ»ú
+    // ç‚¹å‡»å¹¶æ‰“å¼€æ‰‹æœº
     // ====================================================================
 
     private void TryClickPhone()
@@ -466,7 +466,7 @@ public class PhoneQuest : MonoBehaviour
 
         Vector2 screenPosition;
 
-        // ËøÊó±êÊ±´Ó×¼ĞÇÎ»ÖÃ·¢ÉäÏß
+        // é”é¼ æ ‡æ—¶ä»å‡†æ˜Ÿä½ç½®å‘å°„çº¿
         if (Cursor.lockState == CursorLockMode.Locked)
         {
             screenPosition = new Vector2(
@@ -508,7 +508,7 @@ public class PhoneQuest : MonoBehaviour
         if (openPrompt != null)
             openPrompt.SetActive(false);
 
-        // ´ò¿ªÊÖ»úÊ±£¬°Ñ»¹Ã»²¥ÍêµÄËéËéÄî¹Øµô
+        // æ‰“å¼€æ‰‹æœºæ—¶ï¼ŒæŠŠè¿˜æ²¡æ’­å®Œçš„ç¢ç¢å¿µå…³æ‰
         HidePopup();
 
         flashOn = false;
@@ -518,7 +518,7 @@ public class PhoneQuest : MonoBehaviour
         if (ringAudio != null)
             ringAudio.Stop();
 
-        // ½øÈë 2D Ç°»Ö¸´¾µÍ·
+        // è¿›å…¥ 2D å‰æ¢å¤é•œå¤´
         RestoreCamera();
 
         if (disablePlayerControl && playerMover != null)
@@ -551,19 +551,19 @@ public class PhoneQuest : MonoBehaviour
             if (debugLog)
             {
                 Debug.Log(
-                    "[Phone] ÊÖ»úÒÑ´ò¿ª£¬½øÈë 2D Ãæ°å£º" +
+                    "[Phone] æ‰‹æœºå·²æ‰“å¼€ï¼Œè¿›å…¥ 2D é¢æ¿ï¼š" +
                     level2DPanel.name,
                     this);
             }
         }
         else
         {
-            Debug.LogError("[Phone] Level 2D Panel Ã»ÍÏ£¬ÎŞ·¨½øÈë 2D", this);
+            Debug.LogError("[Phone] Level 2D Panel æ²¡æ‹–ï¼Œæ— æ³•è¿›å…¥ 2D", this);
         }
     }
 
     // ====================================================================
-    // ÊÖ»úĞ§¹û
+    // æ‰‹æœºæ•ˆæœ
     // ====================================================================
 
     private void ApplyVibration()
@@ -613,7 +613,7 @@ public class PhoneQuest : MonoBehaviour
     }
 
     // ====================================================================
-    // ÒôÆµ
+    // éŸ³é¢‘
     // ====================================================================
 
     private void InitAudio()
@@ -632,7 +632,7 @@ public class PhoneQuest : MonoBehaviour
         ringAudio.loop = true;
         ringAudio.playOnAwake = false;
         ringAudio.spatialBlend = Mathf.Clamp01(ringSpatialBlend);
-        ringAudio.volume = Mathf.Clamp01(ringVolume);
+        ringAudio.volume = Mathf.Clamp01(ringVolume * AudioLoudness.GetGain(ringAudio.clip));
     }
 
     private void PlayRing()
@@ -644,20 +644,20 @@ public class PhoneQuest : MonoBehaviour
 
         if (ringAudio.clip == null)
         {
-            Debug.LogWarning("[Phone] Ã»ÉèÖÃÁåÉù Clip£¬ÊÖ»úÖ»ÓĞÕğ¶¯Ã»ÓĞÉùÒô", this);
+            Debug.LogWarning("[Phone] æ²¡è®¾ç½®é“ƒå£° Clipï¼Œæ‰‹æœºåªæœ‰éœ‡åŠ¨æ²¡æœ‰å£°éŸ³", this);
             return;
         }
 
         ringAudio.loop = true;
         ringAudio.spatialBlend = Mathf.Clamp01(ringSpatialBlend);
-        ringAudio.volume = Mathf.Clamp01(ringVolume);
+        ringAudio.volume = Mathf.Clamp01(ringVolume * AudioLoudness.GetGain(ringAudio.clip));
 
         if (!ringAudio.isPlaying)
             ringAudio.Play();
     }
 
     // ====================================================================
-    // ÒıÓÃÓëÊäÈë
+    // å¼•ç”¨ä¸è¾“å…¥
     // ====================================================================
 
     private void ResolveReferences()
@@ -725,7 +725,7 @@ public class PhoneQuest : MonoBehaviour
 #endif
     }
 
-    [ContextMenu("²âÊÔ£ºÆô¶¯ÊÖ»úÊÂ¼ş")]
+    [ContextMenu("æµ‹è¯•ï¼šå¯åŠ¨æ‰‹æœºäº‹ä»¶")]
     private void TestStartPhoneEvent()
     {
         StartPhoneEvent();

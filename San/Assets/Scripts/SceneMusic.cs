@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class SceneMusic : MonoBehaviour
 {
-    [Tooltip("Õâ¸ö³¡¾°Òª²¥·ÅµÄ±³¾°ÒôÀÖ")]
+    [Tooltip("è¿™ä¸ªåœºæ™¯è¦æ’­æ”¾çš„èƒŒæ™¯éŸ³ä¹")]
     [SerializeField] private AudioClip music;
 
     private void Start()
@@ -15,11 +15,11 @@ public class SceneMusic : MonoBehaviour
             return;
         }
 
-        // µ¥¶ÀÔËĞĞÄ³¸ö³¡¾°µ÷ÊÔÊ±£¬Ã»ÓĞ SceneFader£¬±¾µØ·ÅÒ»·İ
+        // å•ç‹¬è¿è¡ŒæŸä¸ªåœºæ™¯è°ƒè¯•æ—¶ï¼Œæ²¡æœ‰ SceneFaderï¼Œæœ¬åœ°æ”¾ä¸€ä»½
         AudioSource source = gameObject.AddComponent<AudioSource>();
         source.clip = music;
         source.loop = true;
-        source.volume = 1f;
+        source.volume = AudioLoudness.GetGain(music);
         source.Play();
     }
 }

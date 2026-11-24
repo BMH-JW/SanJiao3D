@@ -4,95 +4,95 @@ using UnityEngine.Events;
 using UnityEngine.UI;
 
 /// <summary>
-/// ¿ÍÌüÏŞÊ±ÕÒÒ£¿Ø°å£º
-/// ½øÈë ¡ú Ñ²ÊÓÒ»¶ÎÊ±¼ä ¡ú µ¯ÌáÊ¾ ¡ú µ¯ÈÎÎñÃæ°å ¡ú µãÈ·ÈÏ¿ªÊ¼µ¹¼ÆÊ±£¨´øÒôÆµ£©
-/// ¡ú Ê±¼äµ½»òÕÒµ½Ò£¿Ø°å½áÊø¡£
-/// ¿ÉÉèÖÃÒ»¿ªÊ¼½ûÓÃ´¥·¢£¬µÈÊÖ»ú¹Ø¿¨Íê³ÉºóÔÙµ÷ÓÃ EnableTrigger() ¿ªÆô¡£
+/// å®¢å…é™æ—¶æ‰¾é¥æ§æ¿ï¼š
+/// è¿›å…¥ â†’ å·¡è§†ä¸€æ®µæ—¶é—´ â†’ å¼¹æç¤º â†’ å¼¹ä»»åŠ¡é¢æ¿ â†’ ç‚¹ç¡®è®¤å¼€å§‹å€’è®¡æ—¶ï¼ˆå¸¦éŸ³é¢‘ï¼‰
+/// â†’ æ—¶é—´åˆ°æˆ–æ‰¾åˆ°é¥æ§æ¿ç»“æŸã€‚
+/// å¯è®¾ç½®ä¸€å¼€å§‹ç¦ç”¨è§¦å‘ï¼Œç­‰æ‰‹æœºå…³å¡å®Œæˆåå†è°ƒç”¨ EnableTrigger() å¼€å¯ã€‚
 /// </summary>
 public class LivingRoomQuest : MonoBehaviour
 {
-    [Header("´¥·¢")]
-    [Tooltip("¹´ÉÏ£ºÍæ¼Ò½øÈë´¥·¢Çø×Ô¶¯¿ªÊ¼£¨±¾ÎïÌåĞèÒªÓĞ Collider ²¢¹´ Is Trigger£©")]
+    [Header("è§¦å‘")]
+    [Tooltip("å‹¾ä¸Šï¼šç©å®¶è¿›å…¥è§¦å‘åŒºè‡ªåŠ¨å¼€å§‹ï¼ˆæœ¬ç‰©ä½“éœ€è¦æœ‰ Collider å¹¶å‹¾ Is Triggerï¼‰")]
     public bool startOnPlayerEnter = false;
 
-    [Tooltip("¿ªÊ¼Ê±½ûÓÃ´¥·¢£¬µÈÊÖ»ú¹Ø¿¨Íê³ÉºóÔÙµ÷ÓÃ EnableTrigger() ¿ªÆô")]
+    [Tooltip("å¼€å§‹æ—¶ç¦ç”¨è§¦å‘ï¼Œç­‰æ‰‹æœºå…³å¡å®Œæˆåå†è°ƒç”¨ EnableTrigger() å¼€å¯")]
     public bool startDisabled = true;
 
-    [Tooltip("´¥·¢ÓÃµÄ Collider£»Áô¿Õ×Ô¶¯È¡±¾ÎïÌåÉÏµÄ Collider")]
+    [Tooltip("è§¦å‘ç”¨çš„ Colliderï¼›ç•™ç©ºè‡ªåŠ¨å–æœ¬ç‰©ä½“ä¸Šçš„ Collider")]
     public Collider triggerCollider;
 
-    [Tooltip("Íæ¼ÒµÄ Tag")]
+    [Tooltip("ç©å®¶çš„ Tag")]
     public string playerTag = "Player";
 
-    [Tooltip("½øÈëºóÏÈÈÃÍæ¼Ò×ÔÓÉÑ²ÊÓ¶à¾Ã£¨Ãë£©")]
+    [Tooltip("è¿›å…¥åå…ˆè®©ç©å®¶è‡ªç”±å·¡è§†å¤šä¹…ï¼ˆç§’ï¼‰")]
     public float lookAroundSeconds = 1.5f;
 
-    [Header("ÌáÊ¾")]
-    [Tooltip("¡¸ÚÀ£¬ÎÒÒ£¿Ø°åÈ¥ÄÄÀïÁË£¿£¡¡¹ÕâÕÅÌáÊ¾")]
+    [Header("æç¤º")]
+    [Tooltip("ã€Œè¯¶ï¼Œæˆ‘é¥æ§æ¿å»å“ªé‡Œäº†ï¼Ÿï¼ã€è¿™å¼ æç¤º")]
     public GameObject hintPanel;
 
-    [Tooltip("ÌáÊ¾ÏÔÊ¾¶à¾Ã£¨Ãë£©")]
+    [Tooltip("æç¤ºæ˜¾ç¤ºå¤šä¹…ï¼ˆç§’ï¼‰")]
     public float hintSeconds = 2f;
 
-    [Header("ÈÎÎñÃæ°å")]
-    [Tooltip("ÈÎÎñÃæ°å£¨ÉÏÃæĞ´¡¸30 ÃëÄÚÕÒµ½Ò£¿Ø°å¡¹£©")]
+    [Header("ä»»åŠ¡é¢æ¿")]
+    [Tooltip("ä»»åŠ¡é¢æ¿ï¼ˆä¸Šé¢å†™ã€Œ30 ç§’å†…æ‰¾åˆ°é¥æ§æ¿ã€ï¼‰")]
     public GameObject taskPanel;
 
-    [Tooltip("ÈÎÎñÃæ°åÉÏµÄÈ·ÈÏ°´Å¥")]
+    [Tooltip("ä»»åŠ¡é¢æ¿ä¸Šçš„ç¡®è®¤æŒ‰é’®")]
     public Button confirmButton;
 
-    [Tooltip("µãÈ·ÈÏºóÒş²ØÈÎÎñÃæ°å£¨µ¹¼ÆÊ±¸Ä·Åµ½ HUD ÉÏÊ±¹´Ñ¡£©")]
+    [Tooltip("ç‚¹ç¡®è®¤åéšè—ä»»åŠ¡é¢æ¿ï¼ˆå€’è®¡æ—¶æ”¹æ”¾åˆ° HUD ä¸Šæ—¶å‹¾é€‰ï¼‰")]
     public bool hideTaskPanelOnConfirm = false;
 
-    [Header("µ¹¼ÆÊ±")]
-    [Tooltip("ÏŞÊ±ÃëÊı")]
+    [Header("å€’è®¡æ—¶")]
+    [Tooltip("é™æ—¶ç§’æ•°")]
     public float timeLimit = 30f;
 
-    [Tooltip("ÏÔÊ¾µ¹¼ÆÊ±µÄ Text£¨·ÅÔÚÈÎÎñÃæ°åºÏÊÊÎ»ÖÃ£©")]
+    [Tooltip("æ˜¾ç¤ºå€’è®¡æ—¶çš„ Textï¼ˆæ”¾åœ¨ä»»åŠ¡é¢æ¿åˆé€‚ä½ç½®ï¼‰")]
     public Text countdownText;
 
-    [Tooltip("µ¹¼ÆÊ±ÎÄ×Ö¸ñÊ½£¬{0} ÊÇÊ£ÓàÃëÊı")]
-    public string countdownFormat = "Ê£Óà {0} Ãë";
+    [Tooltip("å€’è®¡æ—¶æ–‡å­—æ ¼å¼ï¼Œ{0} æ˜¯å‰©ä½™ç§’æ•°")]
+    public string countdownFormat = "å‰©ä½™ {0} ç§’";
 
-    [Header("ÒôÆµ")]
-    [Tooltip("µ¹¼ÆÊ±Ñ­»·ÒôĞ§£¨µÎ´ğÉù£©£¬Áô¿ÕÔò¾²Òô")]
+    [Header("éŸ³é¢‘")]
+    [Tooltip("å€’è®¡æ—¶å¾ªç¯éŸ³æ•ˆï¼ˆæ»´ç­”å£°ï¼‰ï¼Œç•™ç©ºåˆ™é™éŸ³")]
     public AudioClip tickLoopClip;
 
     [Range(0f, 1f)]
     public float volume = 1f;
 
-    [Tooltip("Ê±¼äµ½µÄÒôĞ§")]
+    [Tooltip("æ—¶é—´åˆ°çš„éŸ³æ•ˆ")]
     public AudioClip timeUpClip;
 
-    [Header("Íæ¼Ò¿ØÖÆ")]
-    [Tooltip("ÈÎÎñÃæ°åµ¯³öÊ±¶³½áÒÆ¶¯/½âËøÊó±ê£¬È·ÈÏºó»Ö¸´")]
+    [Header("ç©å®¶æ§åˆ¶")]
+    [Tooltip("ä»»åŠ¡é¢æ¿å¼¹å‡ºæ—¶å†»ç»“ç§»åŠ¨/è§£é”é¼ æ ‡ï¼Œç¡®è®¤åæ¢å¤")]
     public bool managePlayerControl = true;
 
-    [Header("ÊÂ¼ş")]
-    [Tooltip("µ¹¼ÆÊ±½áÊø£¨Ê§°Ü£©Ê±´¥·¢")]
+    [Header("äº‹ä»¶")]
+    [Tooltip("å€’è®¡æ—¶ç»“æŸï¼ˆå¤±è´¥ï¼‰æ—¶è§¦å‘")]
     public UnityEvent onTimeUp;
 
-    [Tooltip("ÌáÇ°ÕÒµ½Ò£¿Ø°å¡¢ÈÎÎñÍê³ÉÊ±´¥·¢")]
+    [Tooltip("æå‰æ‰¾åˆ°é¥æ§æ¿ã€ä»»åŠ¡å®Œæˆæ—¶è§¦å‘")]
     public UnityEvent onQuestComplete;
 
-    [Header("·¢ÏÖÒ£¿ØÆ÷")]
-    [Tooltip("Ò£¿ØÆ÷ÉÏµÄ PickupItem£»Íæ¼ÒÄÃÆğËü¼´ÊÓÎª·¢ÏÖ")]
+    [Header("å‘ç°é¥æ§å™¨")]
+    [Tooltip("é¥æ§å™¨ä¸Šçš„ PickupItemï¼›ç©å®¶æ‹¿èµ·å®ƒå³è§†ä¸ºå‘ç°")]
     public PickupItem remote;
 
-    [Header("½á¹ûÑİ³ö")]
-    [Tooltip("ÇéĞ÷ÇòÏµÍ³£¨³É¹¦¸ø¾ªÏ²Çò£¬Ê§°Ü¸ø·ßÅ­Çò£©")]
+    [Header("ç»“æœæ¼”å‡º")]
+    [Tooltip("æƒ…ç»ªçƒç³»ç»Ÿï¼ˆæˆåŠŸç»™æƒŠå–œçƒï¼Œå¤±è´¥ç»™æ„¤æ€’çƒï¼‰")]
     public EmotionRewardFly emotionRewardFly;
 
-    [Tooltip("·¢ÏÖÒ£¿ØÆ÷ºóÑÓ³Ù¶à¾Ãµ¯½á¹ûÌáÊ¾£¨Ãë£©")]
+    [Tooltip("å‘ç°é¥æ§å™¨åå»¶è¿Ÿå¤šä¹…å¼¹ç»“æœæç¤ºï¼ˆç§’ï¼‰")]
     public float successDelay = 1.5f;
 
-    [Tooltip("³É¹¦µ¯´°£º¡¸Å¶£¡Ô­À´ÔÚÕâ£¡¡¹")]
+    [Tooltip("æˆåŠŸå¼¹çª—ï¼šã€Œå“¦ï¼åŸæ¥åœ¨è¿™ï¼ã€")]
     public GameObject successPopup;
 
-    [Tooltip("Ê§°Üµ¯´°£º¡¸ÕæÊÇÆøËÀÎÒÁË£¡ÎÒ²»¿´ÁË£¡¡¹")]
+    [Tooltip("å¤±è´¥å¼¹çª—ï¼šã€ŒçœŸæ˜¯æ°”æ­»æˆ‘äº†ï¼æˆ‘ä¸çœ‹äº†ï¼ã€")]
     public GameObject failPopup;
 
-    [Tooltip("½á¹ûµ¯´°Í£ÁôÊ±¼ä£¨Ãë£©")]
+    [Tooltip("ç»“æœå¼¹çª—åœç•™æ—¶é—´ï¼ˆç§’ï¼‰")]
     public float resultPopupSeconds = 2f;
 
     private AudioSource audioSource;
@@ -227,7 +227,7 @@ public class LivingRoomQuest : MonoBehaviour
         StopTick();
 
         if (timeUpClip != null && audioSource != null)
-            audioSource.PlayOneShot(timeUpClip, volume);
+            audioSource.PlayOneShot(timeUpClip, Mathf.Clamp01(volume * AudioLoudness.GetGain(timeUpClip)));
 
         onTimeUp?.Invoke();
 
@@ -249,7 +249,7 @@ public class LivingRoomQuest : MonoBehaviour
         StopTick();
 
         if (countdownText != null)
-            countdownText.text = "Íê³É";
+            countdownText.text = "å®Œæˆ";
 
         onQuestComplete?.Invoke();
 
@@ -258,7 +258,7 @@ public class LivingRoomQuest : MonoBehaviour
 
     private IEnumerator SuccessRoutine()
     {
-        // ¡ï ¼ÆÊ±½áÊø£¬µ¹¼ÆÊ±ÎÄ×ÖÁ¢¼´Òş²Ø
+        // â˜… è®¡æ—¶ç»“æŸï¼Œå€’è®¡æ—¶æ–‡å­—ç«‹å³éšè—
         if (countdownText != null)
             countdownText.gameObject.SetActive(false);
 
@@ -274,7 +274,7 @@ public class LivingRoomQuest : MonoBehaviour
 
     private IEnumerator FailRoutine()
     {
-        // ¡ï ¼ÆÊ±½áÊø£¬µ¹¼ÆÊ±ÎÄ×ÖÁ¢¼´Òş²Ø
+        // â˜… è®¡æ—¶ç»“æŸï¼Œå€’è®¡æ—¶æ–‡å­—ç«‹å³éšè—
         if (countdownText != null)
             countdownText.gameObject.SetActive(false);
 
@@ -311,7 +311,7 @@ public class LivingRoomQuest : MonoBehaviour
         audioSource.playOnAwake = false;
         audioSource.loop = true;
         audioSource.spatialBlend = 0f;
-        audioSource.volume = volume;
+        audioSource.volume = Mathf.Clamp01(volume * AudioLoudness.GetGain(tickLoopClip));
     }
 
     private void PlayTick()
@@ -320,7 +320,7 @@ public class LivingRoomQuest : MonoBehaviour
 
         audioSource.clip = tickLoopClip;
         audioSource.loop = true;
-        audioSource.volume = volume;
+        audioSource.volume = Mathf.Clamp01(volume * AudioLoudness.GetGain(tickLoopClip));
         audioSource.Play();
     }
 

@@ -246,6 +246,11 @@ public class CutGameManager : MonoBehaviour
         ShowFeedback("Great！");
 
         bool stillHave = currentVeg.CutOnce();
+
+        // 切完一刀后，把剩下的这部分挪回来，让红线落在剩余食材的中间
+        if (redLine != null)
+            currentVeg.AlignRemainingCenterToWorldX(redLine.position.x);
+
         SpawnOneSlice();
 
         if (!stillHave)
@@ -496,9 +501,9 @@ public class CutGameManager : MonoBehaviour
         if (sfxSource != null)
         {
             if (isGreat && greatClip != null)
-                sfxSource.PlayOneShot(greatClip);
+                AudioLoudness.PlayOneShot(sfxSource, greatClip);
             else if (isMiss && missClip != null)
-                sfxSource.PlayOneShot(missClip);
+                AudioLoudness.PlayOneShot(sfxSource, missClip);
         }
     }
 

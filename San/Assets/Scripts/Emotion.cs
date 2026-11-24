@@ -242,6 +242,19 @@ public class EmotionRewardFly : MonoBehaviour
     [TextArea(1, 3)]
     public List<string> mixedEndingNarration = new List<string>();
 
+    [Header("旁白结束后的收尾")]
+    [Tooltip("最后一句旁白消失后，自动渐隐并回到封面")]
+    public bool autoReturnToCover = true;
+
+    [Tooltip("要跳回的封面场景名")]
+    public string coverSceneName = "封面";
+
+    [Tooltip("最后一句旁白消失后等待多久开始渐隐（秒）")]
+    public float endingReturnDelaySeconds = 1f;
+
+    [Tooltip("结尾音乐淡出时长（秒）")]
+    public float endingReturnFadeSeconds = 1f;
+
     [Header("结尾音乐")]
     [Tooltip("进入黑屏时切换播放的结尾音乐（Assets/Music/结尾.mp3）")]
     public AudioClip endingMusic;
@@ -260,6 +273,7 @@ public class EmotionRewardFly : MonoBehaviour
     private CanvasGroup endingWhiteGroup;
     private Text endingNarrationText;
     private AudioSource endingMusicSource;
+    private EndingMusicFader endingMusicFader;
 
     [Header("置顶渲染")]
     [Tooltip("情绪球始终显示在所有 3D 物体前面，不会被墙/家具挡住")]
@@ -1618,13 +1632,16 @@ public class EmotionRewardFly : MonoBehaviour
             endingMusicSource.playOnAwake = false;
             endingMusicSource.loop = true;
             endingMusicSource.spatialBlend = 0f;
+
+            // 淡出协程挂在常驻物体上，切场景时不会被打断
+            endingMusicFader = go.AddComponent<EndingMusicFader>();
         }
 
         endingMusicSource.clip = endingMusic;
         endingMusicSource.volume = 0f;
         endingMusicSource.Play();
 
-        StartCoroutine(FadeEndingMusic(endingMusicVolume, fade));
+        StartCoroutine(FadeEndingMusic(endingMusicVolume * AudioLoudness.GetGain(endingMusic), fade));
 
         if (debugLog)
             Debug.Log("[Emotion] 已切换结尾音乐：" + endingMusic.name, this);
@@ -1657,6 +1674,12 @@ public class EmotionRewardFly : MonoBehaviour
     public void FadeOutEndingMusic(float duration = 2f)
     {
         if (endingMusicSource == null) return;
+
+        if (endingMusicFader != null)
+        {
+            endingMusicFader.FadeOut(endingMusicSource, duration);
+            return;
+        }
 
         StartCoroutine(FadeOutEndingMusicRoutine(duration));
     }
@@ -1714,7 +1737,12 @@ public class EmotionRewardFly : MonoBehaviour
         List<string> lines = ResolveEndingNarration(goodCount, badCount);
 
         if (endingNarrationText == null || lines == null || lines.Count == 0)
+        {
+            if (autoReturnToCover)
+                yield return ReturnToCoverRoutine();
+
             yield break;
+        }
 
         for (int i = 0; i < lines.Count; i++)
         {
@@ -1734,6 +1762,86 @@ public class EmotionRewardFly : MonoBehaviour
                 "，共 " + lines.Count + " 句",
                 this);
         }
+
+        // 旁白全部播完 → 渐隐 → 自动回封面
+        if (autoReturnToCover)
+            yield return ReturnToCoverRoutine();
+    }
+
+    private IEnumerator ReturnToCoverRoutine()
+    {
+        string sceneName = string.IsNullOrEmpty(coverSceneName)
+            ? "封面"
+            : coverSceneName;
+
+        if (endingReturnDelaySeconds > 0f)
+            yield return new WaitForSecondsRealtime(endingReturnDelaySeconds);
+
+        // 结尾音乐随黑幕一起淡出（宿主在常驻物体上，切场景不会中断）
+        FadeOutEndingMusic(endingReturnFadeSeconds);
+
+        if (debugLog)
+            Debug.Log("[Emotion] 旁白结束，渐隐并返回封面：" + sceneName, this);
+
+        if (SceneFader.Instance != null)
+        {
+            SceneFader.Instance.FadeToScene(sceneName);
+
+            // 兜底：SceneFader 因状态异常没切场景时，直接加载
+            yield return new WaitForSecondsRealtime(3f);
+
+            if (UnityEngine.SceneManagement.SceneManager
+                    .GetActiveScene().name == sceneName)
+            {
+                yield break;
+            }
+
+            if (debugLog)
+            {
+                Debug.LogWarning(
+                    "[Emotion] SceneFader 未能切换场景，改用直接加载",
+                    this);
+            }
+        }
+        else
+        {
+            // 没有 SceneFader（例如直接从 SampleScene 播放）时，
+            // 自己把白场淡出，露出后面已经全黑的闭幕层
+            yield return FadeEndingWhiteToBlack(endingReturnFadeSeconds);
+        }
+
+        try
+        {
+            UnityEngine.SceneManagement.SceneManager.LoadScene(sceneName);
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError(
+                "[Emotion] 加载封面场景失败：" + sceneName +
+                "，请确认场景已加入 Build Settings。" + e.Message,
+                this);
+        }
+    }
+
+    private IEnumerator FadeEndingWhiteToBlack(float duration)
+    {
+        if (endingWhiteGroup == null) yield break;
+
+        float from = endingWhiteGroup.alpha;
+        float d = Mathf.Max(0.0001f, duration);
+        float t = 0f;
+
+        while (t < d)
+        {
+            t += Time.unscaledDeltaTime;
+
+            endingWhiteGroup.alpha =
+                Mathf.Lerp(from, 0f, Mathf.Clamp01(t / d));
+
+            yield return null;
+        }
+
+        endingWhiteGroup.alpha = 0f;
     }
 
     private IEnumerator ShowNarrationLine(string line)
@@ -2098,5 +2206,49 @@ public class EmotionRewardFly : MonoBehaviour
             diameter = 1f;
 
         return diameter;
+    }
+}
+
+/// <summary>
+/// 结尾音乐淡出的协程宿主：挂在 DontDestroyOnLoad 的音乐物体上，
+/// 切场景时协程不会被销毁，音乐能完整淡出。
+/// </summary>
+public class EndingMusicFader : MonoBehaviour
+{
+    public Coroutine FadeOut(AudioSource source, float duration)
+    {
+        return StartCoroutine(FadeOutRoutine(source, duration));
+    }
+
+    private IEnumerator FadeOutRoutine(
+        AudioSource source,
+        float duration)
+    {
+        if (source == null) yield break;
+
+        float from = source.volume;
+        float d = Mathf.Max(0.0001f, duration);
+        float t = 0f;
+
+        while (t < d)
+        {
+            t += Time.unscaledDeltaTime;
+
+            if (source == null) yield break;
+
+            source.volume =
+                Mathf.Lerp(from, 0f, Mathf.Clamp01(t / d));
+
+            yield return null;
+        }
+
+        if (source != null)
+        {
+            source.Stop();
+            source.volume = 0f;
+        }
+
+        // 淡出完成后清掉常驻音乐物体，避免重复游玩时堆积
+        Destroy(gameObject);
     }
 }

@@ -12,45 +12,48 @@ public class StorySequence : MonoBehaviour
     [System.Serializable]
     public class Line
     {
-        [Tooltip("ÕâÒ»¾äÒÑ¾­ÅÅºÃµÄÎÄ×Ö¶ÔÏó£¬Ö±½Ó´Ó³¡¾°ÍÏ½øÀ´")]
+        [Tooltip("è¿™ä¸€å¥å·²ç»æ’å¥½çš„æ–‡å­—å¯¹è±¡ï¼Œç›´æ¥ä»åœºæ™¯æ‹–è¿›æ¥")]
         public Text subtitleObject;
 
-        [Tooltip("ÕâÒ»¾äÍ£Áô¶àÉÙÃëºó²¥ÏÂÒ»¾ä£»0 ±íÊ¾µÈÍæ¼Òµã»÷")]
+        [Tooltip("è¿™ä¸€å¥åœç•™å¤šå°‘ç§’åæ’­ä¸‹ä¸€å¥ï¼›0 è¡¨ç¤ºç­‰ç©å®¶ç‚¹å‡»")]
         public float duration = 2f;
     }
 
     [System.Serializable]
     public class Slide
     {
-        [Tooltip("ÕâÒ»ÕÅ¾çÇéÍ¼¶ÔÓ¦µÄ³¡¾°ÎïÌå£¨³¡¾°1¡¢³¡¾°2¡­£©")]
+        [Tooltip("è¿™ä¸€å¼ å‰§æƒ…å›¾å¯¹åº”çš„åœºæ™¯ç‰©ä½“ï¼ˆåœºæ™¯1ã€åœºæ™¯2â€¦ï¼‰")]
         public GameObject slideObject;
 
         public Line[] lines;
 
-        [Tooltip("Ã¿¾ä²¥ÍêºóµÄÍ£¶ÙÃëÊı£¬1~2 Ãë±È½Ï×ÔÈ»")]
+        [Tooltip("å›¾ç‰‡å‡ºç°åï¼Œå…ˆåªç•™å›¾ã€ç­‰è¿™ä¹ˆä¹…æ‰æ˜¾ç¤ºç¬¬ä¸€å¥ï¼ˆç§’ï¼‰ã€‚0 è¡¨ç¤ºå›¾å’Œç¬¬ä¸€å¥åŒæ—¶å‡ºç°")]
+        public float firstLineDelay = 0f;
+
+        [Tooltip("æ¯å¥æ’­å®Œåçš„åœé¡¿ç§’æ•°ï¼Œ1~2 ç§’æ¯”è¾ƒè‡ªç„¶")]
         public float lineGap = 1.5f;
 
-        [Tooltip("Ã»ÅäÖÃÈÎºÎ¾ä×ÓÊ±ÕâÕÅÍ¼Í£ÁôµÄÃëÊı£»0 ±íÊ¾µÈµã»÷")]
+        [Tooltip("æ²¡é…ç½®ä»»ä½•å¥å­æ—¶è¿™å¼ å›¾åœç•™çš„ç§’æ•°ï¼›0 è¡¨ç¤ºç­‰ç‚¹å‡»")]
         public float duration = 3f;
     }
 
-    [Header("UI ÒıÓÃ")]
+    [Header("UI å¼•ç”¨")]
     [SerializeField] private Button skipButton;
 
-    [Header("¾çÇéÒôÀÖ")]
-    [Tooltip("Õû¶Î¾çÇé²¥·ÅµÄ±³¾°ÒôÀÖ£¬Ñ­»·²¥·Å")]
+    [Header("å‰§æƒ…éŸ³ä¹")]
+    [Tooltip("æ•´æ®µå‰§æƒ…æ’­æ”¾çš„èƒŒæ™¯éŸ³ä¹ï¼Œå¾ªç¯æ’­æ”¾")]
     [SerializeField] private AudioClip storyMusic;
     [SerializeField] private AudioSource bgmSource;
 
-    [Header("¾çÇéÊı¾İ")]
+    [Header("å‰§æƒ…æ•°æ®")]
     [SerializeField] private Slide[] slides;
 
-    [Tooltip("µÚÒ»¾ä×ÖÄ»¿ªÊ¼Ç°µÄµÈ´ıÊ±¼ä£»0 ÔòÁ¢¼´¿ªÊ¼")]
+    [Tooltip("ç¬¬ä¸€å¥å­—å¹•å¼€å§‹å‰çš„ç­‰å¾…æ—¶é—´ï¼›0 åˆ™ç«‹å³å¼€å§‹")]
     [SerializeField] private float initialDelay = 2.5f;
 
-    [Header("¹Ø¿¨³¡¾°")]
+    [Header("å…³å¡åœºæ™¯")]
 #if UNITY_EDITOR
-    [Tooltip("´Ó Project ´°¿Ú°Ñ¹Ø¿¨³¡¾°ÎÄ¼şÍÏµ½ÕâÀï")]
+    [Tooltip("ä» Project çª—å£æŠŠå…³å¡åœºæ™¯æ–‡ä»¶æ‹–åˆ°è¿™é‡Œ")]
     [SerializeField] private SceneAsset levelScene;
 #endif
     [HideInInspector, SerializeField] private string levelSceneName;
@@ -69,7 +72,7 @@ public class StorySequence : MonoBehaviour
     {
         if (slides == null || slides.Length == 0)
         {
-            Debug.LogWarning("StorySequence Ã»ÓĞÅäÖÃ¾çÇé£¬Ö±½Ó½øÈë¹Ø¿¨");
+            Debug.LogWarning("StorySequence æ²¡æœ‰é…ç½®å‰§æƒ…ï¼Œç›´æ¥è¿›å…¥å…³å¡");
             LoadLevel();
             return;
         }
@@ -79,7 +82,7 @@ public class StorySequence : MonoBehaviour
 
         HideAllSubtitles();
 
-        // ÏÈ¹ØµôËùÓĞ¾çÇéÍ¼£¬Ö»ÏÔÊ¾µÚÒ»ÕÅ
+        // å…ˆå…³æ‰æ‰€æœ‰å‰§æƒ…å›¾ï¼Œåªæ˜¾ç¤ºç¬¬ä¸€å¼ 
         ShowSlide(0);
 
         PlayStoryMusic();
@@ -98,7 +101,7 @@ public class StorySequence : MonoBehaviour
 
     private IEnumerator PlayRoutine()
     {
-        // µÚÒ»¾ä¿ªÊ¼Ç°µÄµÈ´ı£¬ÆÚ¼äµãÌø¹ı¿ÉÌáÇ°¿ªÊ¼
+        // ç¬¬ä¸€å¥å¼€å§‹å‰çš„ç­‰å¾…ï¼ŒæœŸé—´ç‚¹è·³è¿‡å¯æå‰å¼€å§‹
         skipRequested = false;
         float t = 0f;
         while (t < initialDelay && !skipRequested)
@@ -113,6 +116,17 @@ public class StorySequence : MonoBehaviour
             skipRequested = false;
 
             Slide slide = slides[i];
+
+            // è®©å›¾å…ˆå•ç‹¬å‡ºç°ï¼šç­‰ä¸€ä¼šå†å‡ºç¬¬ä¸€å¥
+            if (slide.firstLineDelay > 0f)
+            {
+                float revealTimer = 0f;
+                while (!skipRequested && revealTimer < slide.firstLineDelay)
+                {
+                    revealTimer += Time.deltaTime;
+                    yield return null;
+                }
+            }
 
             if (slide.lines != null && slide.lines.Length > 0)
             {
@@ -153,7 +167,7 @@ public class StorySequence : MonoBehaviour
 
     private void ShowSlide(int index)
     {
-        // Ö»¼¤»îµ±Ç°ÕâÕÅ£¬ÆäÓàÈ«²¿Òş²Ø
+        // åªæ¿€æ´»å½“å‰è¿™å¼ ï¼Œå…¶ä½™å…¨éƒ¨éšè—
         foreach (Slide slide in slides)
         {
             if (slide.slideObject != null)
@@ -163,7 +177,7 @@ public class StorySequence : MonoBehaviour
         if (slides[index].slideObject != null)
             slides[index].slideObject.SetActive(true);
 
-        // »»Í¼Ê±²»Çå¿Õ×ÖÄ»
+        // æ¢å›¾æ—¶ä¸æ¸…ç©ºå­—å¹•
     }
 
     private void ShowLine(Line line)
@@ -188,7 +202,7 @@ public class StorySequence : MonoBehaviour
         }
     }
 
-    // °ó¶¨µ½¡¸Ìø¹ı¾çÇé¡¹°´Å¥µÄ On Click ()
+    // ç»‘å®šåˆ°ã€Œè·³è¿‡å‰§æƒ…ã€æŒ‰é’®çš„ On Click ()
     public void OnSkipClicked()
     {
         skipRequested = true;
@@ -201,9 +215,12 @@ public class StorySequence : MonoBehaviour
 
         if (string.IsNullOrEmpty(levelSceneName))
         {
-            Debug.LogWarning("Ã»ÓĞÍÏÈë¹Ø¿¨³¡¾°£¬Çë¼ì²é Inspector µÄ Level Scene");
+            Debug.LogWarning("æ²¡æœ‰æ‹–å…¥å…³å¡åœºæ™¯ï¼Œè¯·æ£€æŸ¥ Inspector çš„ Level Scene");
             return;
         }
+
+        // è¿›å…¥ 3D å…³å¡åï¼Œç­‰å¼€å¹•æ·¡å…¥ç»“æŸå†å¼¹ä¸¤å¥å¼€åœºç¢ç¢å¿µ
+        StoryLevelIntro.Request();
 
         if (SceneFader.Instance != null)
             SceneFader.Instance.FadeToScene(levelSceneName);

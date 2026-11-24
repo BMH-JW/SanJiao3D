@@ -7,10 +7,13 @@ public class SceneFader : MonoBehaviour
 {
     public static SceneFader Instance { get; private set; }
 
-    [Header("»­Ãæµ­Èëµ­³ö")]
+    /// <summary>æ˜¯å¦æ­£åœ¨åšåœºæ™¯æ·¡å…¥æ·¡å‡ºï¼ˆå«æ–°åœºæ™¯çš„å¼€å¹•æ·¡å…¥ï¼‰ã€‚</summary>
+    public bool IsTransitioning => isTransitioning;
+
+    [Header("ç”»é¢æ·¡å…¥æ·¡å‡º")]
     [SerializeField] private float fadeDuration = 0.5f;
 
-    [Header("ÒôÀÖµ­Èëµ­³ö")]
+    [Header("éŸ³ä¹æ·¡å…¥æ·¡å‡º")]
     [SerializeField] private float musicFadeDuration = 1f;
     [Range(0f, 1f)]
     [SerializeField] private float musicVolume = 0.6f;
@@ -31,11 +34,14 @@ public class SceneFader : MonoBehaviour
 
         Instance = this;
 
-        // DontDestroyOnLoad Ö»¶Ô¸ùÎïÌåÉúĞ§
+        // DontDestroyOnLoad åªå¯¹æ ¹ç‰©ä½“ç”Ÿæ•ˆ
         if (transform.parent != null)
             transform.SetParent(null);
 
         DontDestroyOnLoad(gameObject);
+
+        // è¯»å–ç©å®¶ä¿å­˜çš„éŸ³ä¹éŸ³é‡
+        musicVolume = Mathf.Clamp01(GameAudioSettings.GetMusicVolume(musicVolume));
 
         CreateOverlay();
         CreateMusicSource();
@@ -50,7 +56,7 @@ public class SceneFader : MonoBehaviour
     {
         if (canvasGroup == null) yield break;
 
-        // ¿ª³¡´ÓºÚµ­Èë
+        // å¼€åœºä»é»‘æ·¡å…¥
         canvasGroup.alpha = 1f;
         yield return Fade(0f);
 
@@ -99,7 +105,7 @@ public class SceneFader : MonoBehaviour
         musicSource.volume = 0f;
     }
 
-    // ½øÈë³¡¾°Ê±µ÷ÓÃ£ºÒôÀÖµ­Èë
+    // è¿›å…¥åœºæ™¯æ—¶è°ƒç”¨ï¼šéŸ³ä¹æ·¡å…¥
     public void PlayMusic(AudioClip clip)
     {
         if (clip == null || musicSource == null) return;
@@ -116,15 +122,37 @@ public class SceneFader : MonoBehaviour
             musicSource.Play();
         }
 
-        StartMusicFade(musicVolume, musicFadeDuration, false);
+        StartMusicFade(musicVolume * AudioLoudness.GetGain(clip), musicFadeDuration, false);
     }
 
-    // Ìø×ªÇ°µ÷ÓÃ£ºÒôÀÖµ­³ö
+    // è·³è½¬å‰è°ƒç”¨ï¼šéŸ³ä¹æ·¡å‡º
     public void StopMusic(float duration = -1f)
     {
         if (musicSource == null) return;
 
         StartMusicFade(0f, duration < 0f ? musicFadeDuration : duration, true);
+    }
+
+    /// <summary>å½“å‰èƒŒæ™¯éŸ³ä¹éŸ³é‡ã€‚</summary>
+    public float MusicVolume
+    {
+        get { return musicVolume; }
+    }
+
+    /// <summary>è®¾ç½®èƒŒæ™¯éŸ³ä¹éŸ³é‡å¹¶ä¿å­˜ï¼ˆè®¾ç½®é¢æ¿ç”¨ï¼‰ï¼Œç«‹å³ç”Ÿæ•ˆã€‚</summary>
+    public void SetMusicVolume(float value)
+    {
+        musicVolume = Mathf.Clamp01(value);
+        GameAudioSettings.MusicVolume = musicVolume;
+
+        if (musicRoutine != null)
+        {
+            StopCoroutine(musicRoutine);
+            musicRoutine = null;
+        }
+
+        if (musicSource != null && musicSource.clip != null)
+            musicSource.volume = musicVolume * AudioLoudness.GetGain(musicSource.clip);
     }
 
     private void StartMusicFade(float target, float duration, bool stopWhenDone)
@@ -159,11 +187,11 @@ public class SceneFader : MonoBehaviour
 
         if (string.IsNullOrEmpty(sceneName))
         {
-            Debug.LogError("SceneFader: ³¡¾°ÃûÎª¿Õ£¬ÇëÔÚ°´Å¥µÄ On Click ²ÎÊıÀïÌîĞ´Ä¿±ê³¡¾°Ãû");
+            Debug.LogError("SceneFader: åœºæ™¯åä¸ºç©ºï¼Œè¯·åœ¨æŒ‰é’®çš„ On Click å‚æ•°é‡Œå¡«å†™ç›®æ ‡åœºæ™¯å");
             return;
         }
 
-        // ¿ª³¡µ­Èë»¹Ã»²¥Íê¾ÍµãÁË°´Å¥£ºÏÈÍ£µô£¬±ÜÃâÁ½¸öµ­±ä´ò¼Ü
+        // å¼€åœºæ·¡å…¥è¿˜æ²¡æ’­å®Œå°±ç‚¹äº†æŒ‰é’®ï¼šå…ˆåœæ‰ï¼Œé¿å…ä¸¤ä¸ªæ·¡å˜æ‰“æ¶
         if (startFadeRoutine != null)
         {
             StopCoroutine(startFadeRoutine);
@@ -183,14 +211,14 @@ public class SceneFader : MonoBehaviour
     {
         isTransitioning = true;
 
-        StopMusic(fadeDuration); // ÒôÀÖºÍºÚÄ»Ò»Æğµ­³ö
+        StopMusic(fadeDuration); // éŸ³ä¹å’Œé»‘å¹•ä¸€èµ·æ·¡å‡º
         yield return Fade(1f);
 
         AsyncOperation op = SceneManager.LoadSceneAsync(sceneName);
 
         if (op == null)
         {
-            Debug.LogError($"SceneFader: ³¡¾° \"{sceneName}\" ¼ÓÔØÊ§°Ü£¬Çë¼ì²éÊÇ·ñÒÑ¼ÓÈë Build Settings");
+            Debug.LogError($"SceneFader: åœºæ™¯ \"{sceneName}\" åŠ è½½å¤±è´¥ï¼Œè¯·æ£€æŸ¥æ˜¯å¦å·²åŠ å…¥ Build Settings");
             yield return Fade(0f);
             isTransitioning = false;
             yield break;
@@ -206,9 +234,9 @@ public class SceneFader : MonoBehaviour
         while (!op.isDone)
             yield return null;
 
-        yield return null; // µÈĞÂ³¡¾°äÖÈ¾Ò»Ö¡
+        yield return null; // ç­‰æ–°åœºæ™¯æ¸²æŸ“ä¸€å¸§
 
-        yield return Fade(0f); // ĞÂ³¡¾°µ­Èë
+        yield return Fade(0f); // æ–°åœºæ™¯æ·¡å…¥
 
         isTransitioning = false;
     }

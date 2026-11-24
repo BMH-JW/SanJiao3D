@@ -392,7 +392,7 @@ public class DoorInteraction : MonoBehaviour
     {
         if (clip == null) return;
         EnsureAudio();
-        audioSource.PlayOneShot(clip, soundVolume);
+        audioSource.PlayOneShot(clip, Mathf.Clamp01(soundVolume * AudioLoudness.GetGain(clip)));
     }
 
     /// <summary>记录初始位置，并按配置算出铰链点（世界坐标）。</summary>

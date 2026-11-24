@@ -163,6 +163,29 @@ public class VegItem : MonoBehaviour, IPointerClickHandler
         fixedLeftEdgeLocal = rt.anchoredPosition.x - rt.sizeDelta.x * 0.5f;
     }
 
+    /// <summary>
+    /// 把「剩下的这部分食材」的中心挪到指定世界坐标 X 上。
+    /// Filled 模式左边固定、右边被裁掉，所以需要把整块往左推半个已切掉的宽度，
+    /// 让红线落在剩余食材的正中间。
+    /// </summary>
+    public void AlignRemainingCenterToWorldX(float worldX)
+    {
+        if (rt == null) return;
+
+        float scaleX = Mathf.Abs(rt.lossyScale.x);
+        float widthWorld = rt.rect.width * scaleX;
+
+        // 剩余可见部分的中心，相对 pivot 的世界 X 偏移（Filled 左边固定，右侧被裁掉）
+        float pivotToCenter = rt.rect.center.x * scaleX;
+        float visibleCenterOffset = useImageFill
+            ? pivotToCenter - widthWorld * (1f - CurrentRatio) * 0.5f
+            : pivotToCenter;
+
+        Vector3 p = rt.position;
+        p.x = worldX - visibleCenterOffset;
+        rt.position = p;
+    }
+
     /// <summary>取当前这一刀要用的碎片图片；没配置返回 null（用预制体自带的图）。</summary>
     public Sprite GetSliceSprite()
     {
