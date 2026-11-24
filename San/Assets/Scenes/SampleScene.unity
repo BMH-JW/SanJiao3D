@@ -936,7 +936,7 @@ MonoBehaviour:
   taskPanel: {fileID: 1886376518}
   confirmButton: {fileID: 1512963503}
   hideTaskPanelOnConfirm: 1
-  timeLimit: 60
+  timeLimit: 50
   countdownText: {fileID: 1099138357}
   countdownFormat: "\u5269\u4F59 {0} \u79D2"
   tickLoopClip: {fileID: 8300000, guid: 7e1c386c7155c0b4eb01952a97143b0b, type: 3}
@@ -1992,7 +1992,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "60\u79D2\u5185\u627E\u5230\u9065\u63A7\u5668"
+  m_Text: "50\u79D2\u5185\u627E\u5230\u9065\u63A7\u5668"
 --- !u!222 &131754498
 CanvasRenderer:
   m_ObjectHideFlags: 0
