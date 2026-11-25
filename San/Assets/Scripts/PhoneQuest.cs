@@ -218,8 +218,11 @@ public class PhoneQuest : MonoBehaviour
         StopPopupRoutine();
         popupRoutine = StartCoroutine(PlayRingPopups());
 
+        // Handheld 只在移动端平台的程序集里存在，WebGL / PC 构建时会报 CS0103
+#if UNITY_ANDROID || UNITY_IOS
         if (vibrateRealDevice)
             Handheld.Vibrate();
+#endif
 
         if (debugLog)
             Debug.Log("[Phone] 情绪球收集完成，手机开始震动 + 弹碎碎念", this);
