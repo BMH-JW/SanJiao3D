@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 /// <summary>
@@ -24,6 +25,9 @@ public class CoverMenu : MonoBehaviour
     [Header("3D 场景")]
     [Tooltip("打开设置时暂停第一人称操作和场景点击，关闭后恢复")]
     public bool blockGameplayWhileOpen = true;
+
+    [Tooltip("3D 场景设置里的「返回封面」按钮要跳转的场景名")]
+    public string coverSceneName = "封面";
 
     private GameObject settingsPanel;
     private VolumeSlider musicSlider;
@@ -101,6 +105,22 @@ public class CoverMenu : MonoBehaviour
 #endif
     }
 
+    /// <summary>3D 场景设置面板里的「返回封面」按钮：渐隐后回到封面场景。</summary>
+    public void ReturnToCover()
+    {
+        if (string.IsNullOrEmpty(coverSceneName))
+            coverSceneName = "封面";
+
+        // 先收起面板，避免渐隐过程中残留设置窗口
+        if (settingsPanel != null)
+            settingsPanel.SetActive(false);
+
+        if (SceneFader.Instance != null)
+            SceneFader.Instance.FadeToScene(coverSceneName);
+        else
+            SceneManager.LoadScene(coverSceneName);
+    }
+
     // ====================================================================
 
     private void OnMusicChanged(float value)
@@ -153,6 +173,7 @@ public class CoverMenu : MonoBehaviour
         {
             playerMoverWasEnabled = playerMover.enabled;
             playerMover.enabled = false;
+            playerMover.LockCursor(false);   // 打开设置面板，释放鼠标才能拖动滑条
         }
     }
 
@@ -165,7 +186,10 @@ public class CoverMenu : MonoBehaviour
             handleClick.enabled = true;
 
         if (playerMover != null && playerMoverWasEnabled)
+        {
             playerMover.enabled = true;
+            playerMover.LockCursor(true);   // 关闭设置，重新锁定鼠标恢复第一人称转视角
+        }
 
         handleClick = null;
         playerMover = null;
@@ -259,10 +283,23 @@ public class CoverMenu : MonoBehaviour
         CreateSimpleButton(
             "关闭",
             windowRt,
-            new Vector2(0f, -155f),
+            new Vector2(-120f, -155f),
             new Vector2(200f, 62f),
             CloseSettings,
             30);
+
+        // 只在 3D 游戏场景（存在 PlayerMover）里显示「返回封面」；
+        // 封面场景自身打开设置时不显示这个按钮
+        if (FindObjectOfType<PlayerMover>() != null)
+        {
+            CreateSimpleButton(
+                "返回封面",
+                windowRt,
+                new Vector2(130f, -155f),
+                new Vector2(200f, 62f),
+                ReturnToCover,
+                30);
+        }
 
         settingsPanel.SetActive(false);
     }

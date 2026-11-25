@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>{{{ PRODUCT_NAME }}}</title>
+    <link rel="stylesheet" href="TemplateData/style.css">
+</head>
+<body>
+    <div id="unity-container">
+        <!-- 关键：画布渲染分辨率固定为 1920x1080（width/height 属性）。
+             CSS 只负责把这块 1920x1080 的画面等比缩放显示到窗口里，
+             配合 config.matchWebGLToCanvasSize=false，Unity 不会再把渲染分辨率改成窗口大小，
+             这样场景里“拉伸锚点 + 负 sizeDelta”的 UI 在任何窗口尺寸下都和编辑器里完全一致。 -->
+        <canvas id="unity-canvas" width="1920" height="1080" tabindex="-1"></canvas>
+
+        <div id="unity-loading-bar">
+            <div id="unity-progress-bar-empty">
+                <div id="unity-progress-bar-full"></div>
+            </div>
+        </div>
+        <div id="unity-warning"></div>
+    </div>
+
+    <script>
+        var container = document.querySelector("#unity-container");
+        var canvas = document.querySelector("#unity-canvas");
+        var loadingBar = document.querySelector("#unity-loading-bar");
+        var progressBarFull = document.querySelector("#unity-progress-bar-full");
+        var warningBanner = document.querySelector("#unity-warning");
+
+        // 固定内部渲染分辨率，CSS 等比缩放适配窗口，超出部分留黑边
+        var BASE_W = 1920;
+        var BASE_H = 1080;
+        function fitCanvas() {
+            var scale = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
+            canvas.style.width = (BASE_W * scale) + "px";
+            canvas.style.height = (BASE_H * scale) + "px";
+        }
+        window.addEventListener("resize", fitCanvas);
+        fitCanvas();
+
+        function unityShowBanner(msg, type) {
+            function updateBannerVisibility() {
+                warningBanner.style.display = warningBanner.children.length ? "block" : "none";
+            }
+            var div = document.createElement("div");
+            div.innerHTML = msg;
+            warningBanner.appendChild(div);
+            if (type === "error") div.style.cssText = "background:red;padding:10px;";
+            else {
+                if (type === "warning") div.style.cssText = "background:yellow;padding:10px;";
+                setTimeout(function () {
+                    if (div.parentNode) warningBanner.removeChild(div);
+                    updateBannerVisibility();
+                }, 5000);
+            }
+            updateBannerVisibility();
+        }
+
+        var buildUrl = "Build";
+        var loaderUrl = buildUrl + "/{{{ LOADER_FILENAME }}}";
+        var config = {
+            dataUrl: buildUrl + "/{{{ DATA_FILENAME }}}",
+            frameworkUrl: buildUrl + "/{{{ FRAMEWORK_FILENAME }}}",
+#if USE_THREADS
+            workerUrl: buildUrl + "/{{{ WORKER_FILENAME }}}",
+#endif
+#if USE_WASM
+            codeUrl: buildUrl + "/{{{ CODE_FILENAME }}}",
+#endif
+#if MEMORY_FILENAME
+            memoryUrl: buildUrl + "/{{{ MEMORY_FILENAME }}}",
+#endif
+#if SYMBOLS_FILENAME
+            symbolsUrl: buildUrl + "/{{{ SYMBOLS_FILENAME }}}",
+#endif
+            streamingAssetsUrl: "StreamingAssets",
+            companyName: {{{ JSON.stringify(COMPANY_NAME) }}},
+            productName: {{{ JSON.stringify(PRODUCT_NAME) }}},
+            productVersion: {{{ JSON.stringify(PRODUCT_VERSION) }}},
+            showBanner: unityShowBanner,
+
+            // 不要让 Unity 把渲染目标分辨率同步成画布 CSS 大小，保持 1920x1080
+            matchWebGLToCanvasSize: false,
+            devicePixelRatio: 1
+        };
+
+        loadingBar.style.display = "block";
+
+        var script = document.createElement("script");
+        script.src = loaderUrl;
+        script.onload = () => {
+            createUnityInstance(canvas, config, function (progress) {
+                progressBarFull.style.width = (100 * progress) + "%";
+            }).then(function (unityInstance) {
+                loadingBar.style.display = "none";
+            }).catch(function (message) {
+                alert(message);
+            });
+        };
+        document.body.appendChild(script);
+    </script>
+</body>
+</html>
