@@ -274,6 +274,7 @@ public class EmotionRewardFly : MonoBehaviour
     private Text endingNarrationText;
     private AudioSource endingMusicSource;
     private EndingMusicFader endingMusicFader;
+    private GameObject flashbangBallInstance;
 
     [Header("置顶渲染")]
     [Tooltip("情绪球始终显示在所有 3D 物体前面，不会被墙/家具挡住")]
@@ -1546,6 +1547,7 @@ public class EmotionRewardFly : MonoBehaviour
         GameObject ball = Instantiate(flashbangBallPrefab);
         ball.name = "EmotionBall_Flashbang";
         ball.SetActive(true);
+        flashbangBallInstance = ball;
 
         if (alwaysRenderOnTop)
         {
@@ -1591,6 +1593,15 @@ public class EmotionRewardFly : MonoBehaviour
             Debug.Log("[Emotion] 三球合拢，已切换成闪光弹", ball);
     }
 
+    /// <summary>闪光弹只用于爆白，白场盖住后销毁，避免旁白结束时又露出来。</summary>
+    private void DestroyFlashbangBall()
+    {
+        if (flashbangBallInstance == null) return;
+
+        Destroy(flashbangBallInstance);
+        flashbangBallInstance = null;
+    }
+
     // ====================================================================
     // 黑屏后冻结玩家 → 闪白 → 结局旁白
     // ====================================================================
@@ -1619,9 +1630,16 @@ public class EmotionRewardFly : MonoBehaviour
 
         float fade = Mathf.Max(0.01f, endingMusicFadeSeconds);
 
+        // 关卡音乐必须在黑幕完全盖住之前淡完，不能拖到黑屏之后还有余音
+        float sceneFade = maskFadeSeconds > 0f
+            ? Mathf.Min(fade, maskFadeSeconds)
+            : 0.05f;
+
         // 当前场景音乐先淡出，和结尾音乐形成交叉淡入淡出
         if (SceneFader.Instance != null)
-            SceneFader.Instance.StopMusic(fade);
+            SceneFader.Instance.StopMusic(sceneFade);
+        else
+            SceneMusic.FadeOutLocal(sceneFade);
 
         if (endingMusicSource == null)
         {
@@ -1732,6 +1750,9 @@ public class EmotionRewardFly : MonoBehaviour
         }
 
         white.alpha = 1f;
+
+        // 全白已经盖住闪光弹，直接收掉，旁白结束后不会再露出来
+        DestroyFlashbangBall();
 
         // 全白之后按顺序逐句播放对应结局旁白
         List<string> lines = ResolveEndingNarration(goodCount, badCount);

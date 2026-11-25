@@ -2,25 +2,25 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// ÀÏ°å¶Ô»°µÄ"»Ø¸´ ¡ú Ñ¡Ôñ"Á÷³Ì£º
-/// ¢Ù µã»Ø¸´°´Å¥ ¡ú »Ø¸´°´Å¥ÏûÊ§£¬³öÏÖÍæ¼Ò»Ø¸´Í¼ + Á½¸öÑ¡Ôñ°´Å¥
-/// ¢Ú µãÄ³¸öÑ¡Ôñ°´Å¥ ¡ú Òş²Ø»Ø¸´½×¶Î£¬ÏÔÊ¾¶ÔÓ¦µÄ½á¹û³¡¾°Í¼
-/// ³õÊ¼×´Ì¬ÓÉ Awake ×Ô¶¯°ÚºÃ£¬²»ÓÃÊÖ¶¯¹´¡£
+/// è€æ¿å¯¹è¯çš„"å›å¤ â†’ é€‰æ‹©"æµç¨‹ï¼š
+/// â‘  ç‚¹å›å¤æŒ‰é’® â†’ å›å¤æŒ‰é’®æ¶ˆå¤±ï¼Œå‡ºç°ç©å®¶å›å¤å›¾ + ä¸¤ä¸ªé€‰æ‹©æŒ‰é’®
+/// â‘¡ ç‚¹æŸä¸ªé€‰æ‹©æŒ‰é’® â†’ éšè—å›å¤é˜¶æ®µï¼Œæ˜¾ç¤ºå¯¹åº”çš„ç»“æœåœºæ™¯å›¾
+/// åˆå§‹çŠ¶æ€ç”± Awake è‡ªåŠ¨æ‘†å¥½ï¼Œä¸ç”¨æ‰‹åŠ¨å‹¾ã€‚
 /// </summary>
 public class BossReplyFlow : MonoBehaviour
 {
-    [Header("»Ø¸´½×¶Î")]
-    [Tooltip("Íæ¼Ò»Ø¸´µÄÍ¼Æ¬£¬Ä¬ÈÏÒş²Ø")]
+    [Header("å›å¤é˜¶æ®µ")]
+    [Tooltip("ç©å®¶å›å¤çš„å›¾ç‰‡ï¼Œé»˜è®¤éšè—")]
     public GameObject playerReplyImage;
 
-    [Tooltip("»Ø¸´°´Å¥£¬Á÷³Ì¿ªÊ¼Ê±¿Éµã")]
+    [Tooltip("å›å¤æŒ‰é’®ï¼Œæµç¨‹å¼€å§‹æ—¶å¯ç‚¹")]
     public Button replyButton;
 
-    [Tooltip("Á½¸öÑ¡Ôñ°´Å¥£¬Ä¬ÈÏÒş²Ø")]
+    [Tooltip("ä¸¤ä¸ªé€‰æ‹©æŒ‰é’®ï¼Œé»˜è®¤éšè—")]
     public GameObject[] choiceButtons;
 
-    [Header("Ñ¡ÔñºóÏÔÊ¾µÄ½á¹ûÍ¼£¨Ë³Ğò¶ÔÓ¦ÉÏÃæµÄÑ¡Ôñ°´Å¥£©")]
-    [Tooltip("µÚ 0 ÕÅ¶ÔÓ¦µÚ 0 ¸öÑ¡Ôñ°´Å¥£¬µÚ 1 ÕÅ¶ÔÓ¦µÚ 1 ¸ö")]
+    [Header("é€‰æ‹©åæ˜¾ç¤ºçš„ç»“æœå›¾ï¼ˆé¡ºåºå¯¹åº”ä¸Šé¢çš„é€‰æ‹©æŒ‰é’®ï¼‰")]
+    [Tooltip("ç¬¬ 0 å¼ å¯¹åº”ç¬¬ 0 ä¸ªé€‰æ‹©æŒ‰é’®ï¼Œç¬¬ 1 å¼ å¯¹åº”ç¬¬ 1 ä¸ª")]
     public GameObject[] choiceResultImages;
 
     private void Awake()
@@ -41,7 +41,7 @@ public class BossReplyFlow : MonoBehaviour
                     btn.onClick.AddListener(() => OnChoiceClicked(index));
                 else
                     Debug.LogWarning(
-                        "[BossReplyFlow] " + go.name + " ÉÏÃ»ÓĞ Button ×é¼ş£¬µãÁËÃ»·´Ó¦",
+                        "[BossReplyFlow] " + go.name + " ä¸Šæ²¡æœ‰ Button ç»„ä»¶ï¼Œç‚¹äº†æ²¡ååº”",
                         go);
             }
         }
@@ -49,7 +49,7 @@ public class BossReplyFlow : MonoBehaviour
         ResetFlow();
     }
 
-    /// <summary>°ÑÃæ°å°Ú»Ø³õÊ¼×´Ì¬£º»Ø¸´°´Å¥¿É¼û£¬ÆäÓàÒş²Ø¡£</summary>
+    /// <summary>æŠŠé¢æ¿æ‘†å›åˆå§‹çŠ¶æ€ï¼šå›å¤æŒ‰é’®å¯è§ï¼Œå…¶ä½™éšè—ã€‚</summary>
     public void ResetFlow()
     {
         if (playerReplyImage != null) playerReplyImage.SetActive(false);
@@ -69,7 +69,7 @@ public class BossReplyFlow : MonoBehaviour
         }
     }
 
-    /// <summary>µã»Ø¸´°´Å¥£º»Ø¸´°´Å¥ÏûÊ§£¬³öÏÖÍæ¼Ò»Ø¸´Í¼ + Á½¸öÑ¡Ôñ°´Å¥¡£</summary>
+    /// <summary>ç‚¹å›å¤æŒ‰é’®ï¼šå›å¤æŒ‰é’®æ¶ˆå¤±ï¼Œå‡ºç°ç©å®¶å›å¤å›¾ + ä¸¤ä¸ªé€‰æ‹©æŒ‰é’®ã€‚</summary>
     public void OnReplyClicked()
     {
         if (replyButton != null) replyButton.gameObject.SetActive(false);
@@ -83,7 +83,7 @@ public class BossReplyFlow : MonoBehaviour
         }
     }
 
-    /// <summary>µãÄ³¸öÑ¡Ôñ°´Å¥£ºÒş²Ø»Ø¸´½×¶Î£¬ÏÔÊ¾¶ÔÓ¦½á¹ûÍ¼¡£</summary>
+    /// <summary>ç‚¹æŸä¸ªé€‰æ‹©æŒ‰é’®ï¼šéšè—å›å¤é˜¶æ®µï¼Œæ˜¾ç¤ºå¯¹åº”ç»“æœå›¾ã€‚</summary>
     public void OnChoiceClicked(int index)
     {
         if (playerReplyImage != null) playerReplyImage.SetActive(false);

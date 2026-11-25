@@ -8,6 +8,10 @@ public class IngredientPickup : MonoBehaviour
     [Tooltip("食材 ID，必须和 TaskHUD 里的 Ingredient Id 完全一致；留空则用物体名字")]
     public string ingredientId = "";
 
+    [Header("拾取条件")]
+    [Tooltip("可选：对应的柜门或冰箱门。设置后，只有门完全打开才能显示拾取提示并拾取；留空则不受限制")]
+    public DoorInteraction requiredDoor;
+
     [Header("提示 UI")]
     [Tooltip("提示物体。建议指向独立的提示子物体（如 Canvas/PickupPrompt），不要指向整个屏幕 Canvas")]
     public GameObject promptRoot;
@@ -233,6 +237,7 @@ public class IngredientPickup : MonoBehaviour
     private bool IsInRange()
     {
         if (player == null) return false;
+        if (requiredDoor != null && !requiredDoor.IsOpen) return false;
 
         Vector3 d = player.position - transform.position;
         if (Mathf.Abs(d.y) > maxHeightDiff) return false;

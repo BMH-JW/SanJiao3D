@@ -14,12 +14,17 @@ public class AudioChannel
     [Tooltip("这条音频对应的 AudioSource")]
     public AudioSource source;
 
+    [Tooltip("也可以直接拖音频文件：运行时会自动找到正在使用这个音频的 AudioSource（适合运行时才创建的铃声等）")]
+    public AudioClip clip;
+
     [Range(0f, 1f)]
     [Tooltip("这条音频自己的音量")]
     public float volume = 1f;
 
     [Tooltip("单独静音这条音频")]
     public bool mute = false;
+
+    [NonSerialized] public AudioSource resolvedSource;
 }
 
 /// <summary>
@@ -136,12 +141,18 @@ public class AudioVolumeController : MonoBehaviour
         {
             AudioChannel channel = channels[i];
 
-            if (channel == null || channel.source == null) continue;
+            if (channel == null) continue;
+
+            AudioSource target = channel.source != null
+                ? channel.source
+                : channel.resolvedSource;
+
+            if (target == null) continue;
 
             // 同一条音量设置下，按音频本身的响度再衰减一次，做到各音源听感一致
-            float gain = AudioLoudness.GetGain(channel.source.clip);
+            float gain = AudioLoudness.GetGain(target.clip);
 
-            channel.source.volume = channel.mute
+            target.volume = channel.mute
                 ? 0f
                 : Mathf.Clamp01(channel.volume * sfxVolume * gain);
         }
@@ -149,14 +160,57 @@ public class AudioVolumeController : MonoBehaviour
 
     private void RescanIfNeeded()
     {
-        if (!autoCollectSources) return;
-
         if (Time.unscaledTime < nextScanTime) return;
 
         nextScanTime =
             Time.unscaledTime + Mathf.Max(0.25f, rescanInterval);
 
+        // 只拖了音频文件、没有拖 AudioSource 的通道，按 Clip 自动绑定
+        BindClipChannels();
+
+        if (!autoCollectSources) return;
+
         ScanSources();
+    }
+
+    /// <summary>给只填了音频文件的通道找到对应的 AudioSource（运行时创建的也能找到）。</summary>
+    private void BindClipChannels()
+    {
+        for (int i = 0; i < channels.Count; i++)
+        {
+            AudioChannel channel = channels[i];
+            if (channel == null) continue;
+
+            if (channel.source != null || channel.clip == null)
+            {
+                channel.resolvedSource = null;
+                continue;
+            }
+
+            AudioSource bound = channel.resolvedSource;
+            if (bound != null && bound.clip == channel.clip)
+                continue;
+
+            channel.resolvedSource = FindSourceByClip(channel.clip);
+        }
+    }
+
+    private static AudioSource FindSourceByClip(AudioClip clip)
+    {
+        AudioSource[] all = FindObjectsOfType<AudioSource>(true);
+
+        for (int i = 0; i < all.Length; i++)
+        {
+            AudioSource source = all[i];
+            if (source == null || source.clip != clip) continue;
+
+            // 常驻物体上的背景音乐由 SceneFader 控制，不接管
+            if (source.gameObject.scene.name == "DontDestroyOnLoad") continue;
+
+            return source;
+        }
+
+        return null;
     }
 
     /// <summary>把场景里还没列出来的 AudioSource 全部加进列表。</summary>
@@ -190,7 +244,10 @@ public class AudioVolumeController : MonoBehaviour
     {
         for (int i = 0; i < channels.Count; i++)
         {
-            if (channels[i] != null && channels[i].source == source)
+            AudioChannel channel = channels[i];
+            if (channel == null) continue;
+
+            if (channel.source == source || channel.resolvedSource == source)
                 return true;
         }
 

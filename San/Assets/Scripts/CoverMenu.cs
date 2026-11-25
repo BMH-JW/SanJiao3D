@@ -4,11 +4,12 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 /// <summary>
-/// 封面场景的「设置 / 退出游戏」逻辑。
+/// 「设置 / 退出游戏」逻辑，封面场景和 3D 游戏场景共用。
 /// 按钮由你自己在场景里创建，然后：
 ///   1. 把本组件挂到任意物体上（建议挂在 Canvas 上）
 ///   2. 在按钮的 Button → OnClick 里拖入本组件，选 CoverMenu.OpenSettings / CoverMenu.QuitGame
 /// 设置面板会在第一次点「设置」时自动生成（独立的 Overlay Canvas 上，保证鼠标可交互）。
+/// 3D 场景里会自动暂停第一人称操作和场景点击，关闭设置后恢复。
 /// </summary>
 public class CoverMenu : MonoBehaviour
 {
@@ -20,11 +21,21 @@ public class CoverMenu : MonoBehaviour
     [Tooltip("留空则使用系统中文字体（微软雅黑）")]
     public Font font;
 
+    [Header("3D 场景")]
+    [Tooltip("打开设置时暂停第一人称操作和场景点击，关闭后恢复")]
+    public bool blockGameplayWhileOpen = true;
+
     private GameObject settingsPanel;
     private VolumeSlider musicSlider;
     private VolumeSlider sfxSlider;
     private Text musicValueText;
     private Text sfxValueText;
+
+    private HandleClick handleClick;
+    private bool handleClickWasEnabled;
+    private PlayerMover playerMover;
+    private bool playerMoverWasEnabled;
+    private bool gameplayBlocked;
 
     // ====================================================================
 
@@ -44,6 +55,8 @@ public class CoverMenu : MonoBehaviour
 
         if (quitButton != null)
             quitButton.onClick.RemoveListener(QuitGame);
+
+        RestoreGameplay();
     }
 
     // ====================================================================
@@ -56,6 +69,8 @@ public class CoverMenu : MonoBehaviour
 
         settingsPanel.SetActive(true);
         settingsPanel.transform.SetAsLastSibling();
+
+        BlockGameplay();
 
         float music = SceneFader.Instance != null
             ? SceneFader.Instance.MusicVolume
@@ -72,6 +87,8 @@ public class CoverMenu : MonoBehaviour
     {
         if (settingsPanel != null)
             settingsPanel.SetActive(false);
+
+        RestoreGameplay();
     }
 
     /// <summary>退出游戏（按钮 OnClick 调用）。</summary>
@@ -92,6 +109,8 @@ public class CoverMenu : MonoBehaviour
 
         if (SceneFader.Instance != null)
             SceneFader.Instance.SetMusicVolume(value);
+        else
+            SceneMusic.SetLocalVolume(value);
 
         RefreshValueLabels();
     }
@@ -113,6 +132,43 @@ public class CoverMenu : MonoBehaviour
 
         if (sfxValueText != null && sfxSlider != null)
             sfxValueText.text = Mathf.RoundToInt(sfxSlider.value * 100f) + "%";
+    }
+
+    /// <summary>3D 场景里打开设置时，暂停走动 / 转视角和场景点击。</summary>
+    private void BlockGameplay()
+    {
+        if (!blockGameplayWhileOpen || gameplayBlocked) return;
+
+        gameplayBlocked = true;
+
+        handleClick = FindObjectOfType<HandleClick>();
+        if (handleClick != null)
+        {
+            handleClickWasEnabled = handleClick.enabled;
+            handleClick.enabled = false;
+        }
+
+        playerMover = FindObjectOfType<PlayerMover>();
+        if (playerMover != null)
+        {
+            playerMoverWasEnabled = playerMover.enabled;
+            playerMover.enabled = false;
+        }
+    }
+
+    private void RestoreGameplay()
+    {
+        if (!gameplayBlocked) return;
+        gameplayBlocked = false;
+
+        if (handleClick != null && handleClickWasEnabled)
+            handleClick.enabled = true;
+
+        if (playerMover != null && playerMoverWasEnabled)
+            playerMover.enabled = true;
+
+        handleClick = null;
+        playerMover = null;
     }
 
     // ====================================================================
@@ -164,7 +220,7 @@ public class CoverMenu : MonoBehaviour
         root.SetParent(canvas.transform, false);
         Stretch(root);
 
-        // 半透明遮罩（不拦截鼠标）
+        // 半透明遮罩（挡住下面 UI 的点击，避免调音量时误触场景按钮）
         GameObject dim = new GameObject("Dim", typeof(RectTransform), typeof(Image));
         RectTransform dimRt = dim.GetComponent<RectTransform>();
         dimRt.SetParent(root, false);
@@ -173,7 +229,7 @@ public class CoverMenu : MonoBehaviour
         Image dimImage = dim.GetComponent<Image>();
         dimImage.sprite = null;
         dimImage.color = new Color(0f, 0f, 0f, 0.7f);
-        dimImage.raycastTarget = false;
+        dimImage.raycastTarget = true;
 
         // 窗口
         GameObject window = new GameObject("Window", typeof(RectTransform), typeof(Image));

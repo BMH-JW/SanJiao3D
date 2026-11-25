@@ -3,51 +3,64 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
 
-/// <summary>ÁÄÌìÖĞµÄÒ»ÂÖ¡£</summary>
+/// <summary>èŠå¤©ä¸­çš„ä¸€è½®ã€‚</summary>
 [System.Serializable]
 public class ChatStep
 {
-    [Tooltip("Íæ¼ÒÕâÒ»ÂÖ·¢³öµÄÏûÏ¢Í¼£¬¿ÉÁô¿Õ£¨±íÊ¾ÕâÂÖÍæ¼Ò²»·¢ÑÔ£¬Ö»ÓĞ¶Ô·½Ëµ£©")]
+    [Tooltip("ç©å®¶è¿™ä¸€è½®å‘å‡ºçš„æ¶ˆæ¯å›¾ï¼Œå¯ç•™ç©ºï¼ˆè¡¨ç¤ºè¿™è½®ç©å®¶ä¸å‘è¨€ï¼Œåªæœ‰å¯¹æ–¹è¯´ï¼‰")]
     public GameObject playerMessage;
 
-    [Tooltip("¶Ô·½ÕâÒ»ÂÖµÄ»Ø»°Í¼£¬»áÒÀ´Î×Ô¶¯³öÏÖ")]
+    [Tooltip("å¯¹æ–¹è¿™ä¸€è½®çš„å›è¯å›¾ï¼Œä¼šä¾æ¬¡è‡ªåŠ¨å‡ºç°")]
     public GameObject[] npcReplies;
 
-    [Tooltip("Íæ¼ÒÏûÏ¢³öÏÖºó£¬¸ô¶à¾Ã¶Ô·½¿ªÊ¼»Ø»°£¨Ãë£©")]
+    [Tooltip("ç©å®¶æ¶ˆæ¯å‡ºç°åï¼Œéš”å¤šä¹…å¯¹æ–¹å¼€å§‹å›è¯ï¼ˆç§’ï¼‰")]
     public float playerToNpcDelay = 0.8f;
 
-    [Tooltip("¶Ô·½¶àÌõ»Ø»°Ö®¼äµÄ¼ä¸ô£¨Ãë£©")]
+    [Tooltip("å¯¹æ–¹å¤šæ¡å›è¯ä¹‹é—´çš„é—´éš”ï¼ˆç§’ï¼‰")]
     public float npcInterval = 0.8f;
 }
 
 /// <summary>
-/// ¶àÂÖÁÄÌìÁ÷³Ì£º
-/// µÚÒ»ÂÖµã¡¾·¢ËÍ¡¿¡ú Íæ¼ÒÏûÏ¢³öÏÖ ¡ú ¶Ô·½»Ø»°×Ô¶¯ÒÀ´Î³öÏÖ£»
-/// »¹ÓĞºóĞøÂÖ´ÎÊ±°´Å¥±ä¡¾»Ø¸´¡¿£»×îºóÒ»ÂÖ½áÊø°´Å¥ÏûÊ§¡£
-/// Ä¸Ç×¡¢ÅóÓÑ¸÷¹ÒÒ»·İ£¬Åä¸÷×ÔµÄÍ¼¡£
+/// å¤šè½®èŠå¤©æµç¨‹ï¼š
+/// ç¬¬ä¸€è½®ç‚¹ã€å‘é€ã€‘â†’ ç©å®¶æ¶ˆæ¯å‡ºç° â†’ å¯¹æ–¹å›è¯è‡ªåŠ¨ä¾æ¬¡å‡ºç°ï¼›
+/// è¿˜æœ‰åç»­è½®æ¬¡æ—¶æŒ‰é’®å˜ã€å›å¤ã€‘ï¼›æœ€åä¸€è½®ç»“æŸæŒ‰é’®æ¶ˆå¤±ã€‚
+/// æ¯äº²ã€æœ‹å‹å„æŒ‚ä¸€ä»½ï¼Œé…å„è‡ªçš„å›¾ã€‚
 /// </summary>
 public class ChatSequence : MonoBehaviour
 {
-    [Header("ÁÄÌì²½Öè£¨°´Ë³ĞòÍÆ½ø£©")]
+    [Header("èŠå¤©æ­¥éª¤ï¼ˆæŒ‰é¡ºåºæ¨è¿›ï¼‰")]
     public ChatStep[] steps;
 
-    [Header("°´Å¥")]
-    [Tooltip("µÚÒ»ÂÖÓÃµÄ¡¾·¢ËÍ¡¿°´Å¥")]
+    [Header("æŒ‰é’®")]
+    [Tooltip("ç¬¬ä¸€è½®ç”¨çš„ã€å‘é€ã€‘æŒ‰é’®")]
     public Button sendButton;
 
-    [Tooltip("ºóĞøÂÖ´ÎÓÃµÄ¡¾»Ø¸´¡¿°´Å¥£»Áô¿ÕÔòÒ»Ö±ÓÃ·¢ËÍ°´Å¥")]
+    [Tooltip("åç»­è½®æ¬¡ç”¨çš„ã€å›å¤ã€‘æŒ‰é’®ï¼›ç•™ç©ºåˆ™ä¸€ç›´ç”¨å‘é€æŒ‰é’®")]
     public Button replyButton;
 
-    [Tooltip("×îºóÒ»ÂÖ½áÊøºóÒş²Ø°´Å¥")]
+    [Tooltip("æœ€åä¸€è½®ç»“æŸåéšè—æŒ‰é’®")]
     public bool hideButtonOnFinish = true;
 
-    [Header("ÊÂ¼ş")]
-    [Tooltip("È«²¿²½Öè½áÊøºó´¥·¢£¨¿ÉÔÚÕâÀï½ÓÇéĞ÷Çò½±Àø£©")]
+    [Header("æ‰“å¼€è¿™ä¸ªèŠå¤©æ—¶éšè—çš„é¢æ¿")]
+    [Tooltip("åˆ‡æ¢åˆ°è¿™æ®µèŠå¤©æ—¶è‡ªåŠ¨å…³æ‰çš„é¡µé¢ï¼Œæ¯”å¦‚ä¹‹å‰æ‰“å¼€çš„è€æ¿èŠå¤©é¡µ")]
+    public GameObject[] hideWhenOpened;
+
+    [Header("å›å¤éŸ³æ•ˆ")]
+    [Tooltip("å¯¹æ–¹æ¯æ¡å›è¯å‡ºç°æ—¶æ’­æ”¾çš„éŸ³æ•ˆï¼Œç•™ç©ºåˆ™ä¸å“")]
+    public AudioClip replyClip;
+
+    [Range(0f, 1f)]
+    [Tooltip("å›å¤éŸ³æ•ˆéŸ³é‡")]
+    public float replyVolume = 1f;
+
+    [Header("äº‹ä»¶")]
+    [Tooltip("å…¨éƒ¨æ­¥éª¤ç»“æŸåè§¦å‘ï¼ˆå¯åœ¨è¿™é‡Œæ¥æƒ…ç»ªçƒå¥–åŠ±ï¼‰")]
     public UnityEvent onFinished;
 
     private int stepIndex = -1;
     private bool playing;
     private Coroutine routine;
+    private AudioSource sfxSource;
 
     private void Awake()
     {
@@ -57,10 +70,29 @@ public class ChatSequence : MonoBehaviour
         if (replyButton != null)
             replyButton.onClick.AddListener(OnActionClicked);
 
+        sfxSource = GetComponent<AudioSource>();
+        if (sfxSource == null) sfxSource = gameObject.AddComponent<AudioSource>();
+
+        sfxSource.playOnAwake = false;
+        sfxSource.spatialBlend = 0f;
+
         ResetFlow();
     }
 
-    /// <summary>°Ú»Ø³õÊ¼×´Ì¬£ºÖ»ÏÔÊ¾·¢ËÍ°´Å¥£¬ËùÓĞÍ¼Òş²Ø¡£</summary>
+    private void OnEnable()
+    {
+        // æ‰“å¼€è¿™æ®µèŠå¤©æ—¶ï¼Œå…ˆæŠŠä¹‹å‰é‚£ä¸ªèŠå¤©é¡µé¢å…³æ‰ï¼Œé¿å…ç»“æŸååˆéœ²å‡ºæ¥
+        if (hideWhenOpened == null) return;
+
+        for (int i = 0; i < hideWhenOpened.Length; i++)
+        {
+            GameObject panel = hideWhenOpened[i];
+            if (panel != null && panel != gameObject)
+                panel.SetActive(false);
+        }
+    }
+
+    /// <summary>æ‘†å›åˆå§‹çŠ¶æ€ï¼šåªæ˜¾ç¤ºå‘é€æŒ‰é’®ï¼Œæ‰€æœ‰å›¾éšè—ã€‚</summary>
     public void ResetFlow()
     {
         StopRoutine();
@@ -74,7 +106,7 @@ public class ChatSequence : MonoBehaviour
         if (replyButton != null) replyButton.gameObject.SetActive(false);
     }
 
-    /// <summary>µã°´Å¥ÍÆ½øÒ»ÂÖ¡£</summary>
+    /// <summary>ç‚¹æŒ‰é’®æ¨è¿›ä¸€è½®ã€‚</summary>
     public void OnActionClicked()
     {
         if (playing) return;
@@ -93,7 +125,7 @@ public class ChatSequence : MonoBehaviour
         playing = true;
         stepIndex = index;
 
-        // ²¥·ÅÆÚ¼äÊÕÆğ°´Å¥£¬·ÀÖ¹Á¬µã
+        // æ’­æ”¾æœŸé—´æ”¶èµ·æŒ‰é’®ï¼Œé˜²æ­¢è¿ç‚¹
         if (sendButton != null) sendButton.gameObject.SetActive(false);
         if (replyButton != null) replyButton.gameObject.SetActive(false);
 
@@ -105,21 +137,24 @@ public class ChatSequence : MonoBehaviour
             yield break;
         }
 
-        // 1. Íæ¼ÒÕâÒ»ÂÖµÄÏûÏ¢
+        // 1. ç©å®¶è¿™ä¸€è½®çš„æ¶ˆæ¯
         if (step.playerMessage != null)
             step.playerMessage.SetActive(true);
 
-        // 2. µÈÒ»ÏÂ£¬¶Ô·½¿ªÊ¼»Ø»°
+        // 2. ç­‰ä¸€ä¸‹ï¼Œå¯¹æ–¹å¼€å§‹å›è¯
         if (step.playerToNpcDelay > 0f)
             yield return new WaitForSecondsRealtime(step.playerToNpcDelay);
 
-        // 3. ¶Ô·½»Ø»°ÒÀ´Î×Ô¶¯³öÏÖ
+        // 3. å¯¹æ–¹å›è¯ä¾æ¬¡è‡ªåŠ¨å‡ºç°
         if (step.npcReplies != null)
         {
             for (int i = 0; i < step.npcReplies.Length; i++)
             {
                 if (step.npcReplies[i] != null)
+                {
                     step.npcReplies[i].SetActive(true);
+                    PlayReplySound();
+                }
 
                 if (step.npcInterval > 0f && i < step.npcReplies.Length - 1)
                     yield return new WaitForSecondsRealtime(step.npcInterval);
@@ -129,7 +164,7 @@ public class ChatSequence : MonoBehaviour
         playing = false;
         routine = null;
 
-        // 4. »¹ÓĞºóĞøÂÖ´Î ¡ú ³öÏÖ¡¾»Ø¸´¡¿£»·ñÔò½áÊø
+        // 4. è¿˜æœ‰åç»­è½®æ¬¡ â†’ å‡ºç°ã€å›å¤ã€‘ï¼›å¦åˆ™ç»“æŸ
         if (stepIndex + 1 < steps.Length)
             ShowReplyButton();
         else
@@ -143,7 +178,7 @@ public class ChatSequence : MonoBehaviour
         if (replyButton != null)
             replyButton.gameObject.SetActive(true);
         else if (sendButton != null)
-            sendButton.gameObject.SetActive(true);   // Ã»Åä»Ø¸´°´Å¥¾Í¼ÌĞøÓÃ·¢ËÍ°´Å¥
+            sendButton.gameObject.SetActive(true);   // æ²¡é…å›å¤æŒ‰é’®å°±ç»§ç»­ç”¨å‘é€æŒ‰é’®
     }
 
     private void Finish()
@@ -157,6 +192,12 @@ public class ChatSequence : MonoBehaviour
         }
 
         onFinished?.Invoke();
+    }
+
+    private void PlayReplySound()
+    {
+        if (replyClip == null || sfxSource == null) return;
+        AudioLoudness.PlayOneShot(sfxSource, replyClip, replyVolume);
     }
 
     private void HideAllImages()
