@@ -16,6 +16,22 @@ public class PlayerMover : MonoBehaviour
     public float minPitch = -60f;
     public float maxPitch = 60f;
 
+    [Header("屏幕边缘旋转（光标未锁定时生效）")]
+    [Tooltip("鼠标贴到屏幕边缘时持续旋转视角，解决光标到边缘就转不动的问题")]
+    public bool enableEdgeRotate = true;
+
+    [Tooltip("距离屏幕边缘多少像素以内开始旋转")]
+    public float edgeSize = 24f;
+
+    [Tooltip("左右边缘的转向速度（度/秒）")]
+    public float edgeYawSpeed = 90f;
+
+    [Tooltip("上下边缘的俯仰速度（度/秒）")]
+    public float edgePitchSpeed = 60f;
+
+    [Tooltip("鼠标悬停在 UI 上时不做边缘旋转")]
+    public bool ignoreEdgeRotateOverUI = true;
+
     [Header("引用")]
     [Tooltip("第一人称摄像机，挂在玩家子物体（眼睛位置）")]
     public Transform cameraTransform;
@@ -49,6 +65,39 @@ public class PlayerMover : MonoBehaviour
 
             yaw += mouseX;
             pitch -= mouseY;
+
+            // 光标未锁定时（CustomCursor 会强制解锁），鼠标贴到屏幕边缘也能持续转视角
+            if (enableEdgeRotate && Cursor.lockState != CursorLockMode.Locked)
+            {
+                bool overUI = ignoreEdgeRotateOverUI &&
+                    UnityEngine.EventSystems.EventSystem.current != null &&
+                    UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject();
+
+                if (!overUI)
+                {
+                    Vector3 mousePos = Input.mousePosition;
+                    float edgeX = 0f;
+                    float edgeY = 0f;
+
+                    // 鼠标在游戏窗口内才做边缘旋转，避免切出窗口后视角自己转
+                    bool insideScreen =
+                        mousePos.x >= 0f && mousePos.x < Screen.width &&
+                        mousePos.y >= 0f && mousePos.y < Screen.height;
+
+                    if (insideScreen)
+                    {
+                        if (mousePos.x <= edgeSize) edgeX = -1f;
+                        else if (mousePos.x >= Screen.width - edgeSize) edgeX = 1f;
+
+                        if (mousePos.y <= edgeSize) edgeY = -1f;
+                        else if (mousePos.y >= Screen.height - edgeSize) edgeY = 1f;
+                    }
+
+                    yaw += edgeX * edgeYawSpeed * Time.deltaTime;
+                    pitch -= edgeY * edgePitchSpeed * Time.deltaTime;
+                }
+            }
+
             pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
 
             // 身体只转 Yaw
