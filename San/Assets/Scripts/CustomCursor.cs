@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 /// <summary>
@@ -21,10 +20,6 @@ public class CustomCursor : MonoBehaviour
     private Image cursorImage;
     private Sprite defaultSprite;
 
-    // 缓存场景里是否存在第一人称控制器（PlayerMover），避免每帧 FindObjectOfType
-    private PlayerMover cachedPlayerMover;
-    private bool playerMoverResolved;
-
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void AutoCreate()
     {
@@ -44,31 +39,7 @@ public class CustomCursor : MonoBehaviour
         }
         instance = this;
 
-        SceneManager.sceneLoaded += OnSceneLoaded;
         BuildUI();
-    }
-
-    void OnDestroy()
-    {
-        SceneManager.sceneLoaded -= OnSceneLoaded;
-        if (instance == this) instance = null;
-    }
-
-    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-    {
-        // 换场景后重新判定当前场景有没有第一人称控制器
-        cachedPlayerMover = null;
-        playerMoverResolved = false;
-    }
-
-    private PlayerMover GetPlayerMover()
-    {
-        if (!playerMoverResolved)
-        {
-            cachedPlayerMover = FindObjectOfType<PlayerMover>();
-            playerMoverResolved = true;
-        }
-        return cachedPlayerMover;
     }
 
     void BuildUI()
@@ -99,35 +70,12 @@ public class CustomCursor : MonoBehaviour
 
     void Update()
     {
-        bool inGameplayScene = GetPlayerMover() != null;
+        // 隐藏系统光标，只显示自定义图片
+        Cursor.visible = false;
+        if (Cursor.lockState != CursorLockMode.None)
+            Cursor.lockState = CursorLockMode.None;
 
-        if (inGameplayScene)
-        {
-            // 3D 场景：PlayerMover 游玩时会锁定鼠标转视角。锁定时 Input.mousePosition 被钉在
-            // 屏幕中心，显示自定义光标没意义，隐藏；只有解锁（打开 UI / 菜单）时才跟随鼠标显示。
-            // 这里不要强行解锁，否则 WebGL 下鼠标撞到浏览器边界就没有移动增量，视角转不动。
-            if (Cursor.lockState == CursorLockMode.None)
-            {
-                Cursor.visible = false;
-                if (cursorImage != null) cursorImage.enabled = true;
-                UpdatePosition();
-            }
-            else
-            {
-                if (cursorImage != null) cursorImage.enabled = false;
-            }
-        }
-        else
-        {
-            // 封面 / 剧情等纯 UI 场景：没有第一人称控制器，始终保持解锁并显示自定义光标。
-            // Cursor.lockState 是全局状态、跨场景不会自动重置——如果从 3D 场景带着“锁定”
-            // 状态回到这里，不主动解锁的话自定义光标和系统光标都会一起消失。
-            if (Cursor.lockState != CursorLockMode.None)
-                Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = false;
-            if (cursorImage != null) cursorImage.enabled = true;
-            UpdatePosition();
-        }
+        UpdatePosition();
     }
 
     void UpdatePosition()

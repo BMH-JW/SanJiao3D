@@ -1,0 +1,8 @@
+﻿git.exe : fatal: path 'San/Assets/Scenes/SampleScene.unity' exists, but not 'Assets/Scenes/SampleScene.unity'
+所在位置 行:17 字符: 1
++ & $git -C d:\github\SanJiao3D\San show 'HEAD:Assets/Scenes/SampleScen ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (fatal: path 'Sa...pleScene.unity':String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+hint: Did you mean 'HEAD:San/Assets/Scenes/SampleScene.unity' aka 'HEAD:./Assets/Scenes/SampleScene.unity'?
