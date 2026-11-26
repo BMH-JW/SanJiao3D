@@ -5257,8 +5257,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxDistance: 4
   pickupMaxDistance: 8
-  pickupBoundsTolerance: 0.3
-  screenRadius: 45
+  pickupBoundsTolerance: 1
+  screenRadius: 100
   showDebugInfo: 1
 --- !u!1001 &447575751
 PrefabInstance:
@@ -6318,7 +6318,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   doorPivot: {fileID: 1534234984}
-  openAngle: 90
+  openAngle: 100
   openSpeed: 120
   doorBlocker: {fileID: 451315560}
   hingeSide: 0
@@ -6335,7 +6335,7 @@ MonoBehaviour:
   soundVolume: 1
   playerProbeHeight: 0.9
   autoCloseAfterEnter: 1
-  autoCloseDelay: 1
+  autoCloseDelay: 0.8
   storyOnlyOnce: 1
   storyKey: door
   debugLog: 1
@@ -10690,7 +10690,7 @@ MonoBehaviour:
   maxDistance: 4
   pickupMaxDistance: 8
   pickupBoundsTolerance: 0.3
-  screenRadius: 45
+  screenRadius: 90
   showDebugInfo: 1
 --- !u!1 &925234115
 GameObject:
@@ -14151,10 +14151,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 435122680bf1405469863667dc0e3ceb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxDistance: 4
+  maxDistance: 6
   pickupMaxDistance: 8
-  pickupBoundsTolerance: 0.3
-  screenRadius: 45
+  pickupBoundsTolerance: 1
+  screenRadius: 200
   showDebugInfo: 1
 --- !u!1 &1244944744
 GameObject:
@@ -20661,7 +20661,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -535, y: 319}
+  m_AnchoredPosition: {x: -472, y: 319}
   m_SizeDelta: {x: 600, y: -10}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1703366113
@@ -24051,7 +24051,7 @@ MonoBehaviour:
   maxDistance: 4
   pickupMaxDistance: 8
   pickupBoundsTolerance: 0.3
-  screenRadius: 45
+  screenRadius: 90
   showDebugInfo: 1
 --- !u!1 &2041726769
 GameObject:

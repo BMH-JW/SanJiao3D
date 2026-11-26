@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System.Collections.Generic;
 
 /// <summary>
 /// 第一人称角色移动 + 鼠标视角控制。
@@ -36,6 +37,10 @@ public class PlayerMover : MonoBehaviour
     [Tooltip("第一人称摄像机，挂在玩家子物体（眼睛位置）")]
     public Transform cameraTransform;
 
+    [Header("调试")]
+    [Tooltip("按下 WASD 时在 Console 打印驱动相机与各启用相机的朝向，用于排查方向错乱")]
+    public bool debugLog = true;
+
     private Rigidbody rb;
     private Animator anim;
     private float yaw = 0f;
@@ -43,6 +48,11 @@ public class PlayerMover : MonoBehaviour
 
     private bool canMove = true;
     private bool canLook = true;
+
+    // 本帧渲染到屏幕(targetTexture 为空)的相机，按渲染顺序记录——最后一个就是画在最上层、玩家实际看到的画面
+    private readonly List<Camera> screenCamerasThisFrame = new List<Camera>();
+    private int screenCamerasFrame = -1;
+    private float nextDebugTime = 0f;
 
     void Start()
     {
@@ -53,6 +63,31 @@ public class PlayerMover : MonoBehaviour
 
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+    }
+
+    void OnEnable()
+    {
+        Camera.onPostRender += OnCameraPostRender;
+    }
+
+    void OnDisable()
+    {
+        Camera.onPostRender -= OnCameraPostRender;
+    }
+
+    /// <summary>记录本帧渲染到屏幕的相机（targetTexture 为空），按渲染顺序保存。</summary>
+    private void OnCameraPostRender(Camera cam)
+    {
+        if (cam == null || cam.targetTexture != null) return;
+
+        int frame = Time.frameCount;
+        if (screenCamerasFrame != frame)
+        {
+            screenCamerasThisFrame.Clear();
+            screenCamerasFrame = frame;
+        }
+        if (!screenCamerasThisFrame.Contains(cam))
+            screenCamerasThisFrame.Add(cam);
     }
 
     void Update()
@@ -135,11 +170,76 @@ public class PlayerMover : MonoBehaviour
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
 
-        // 相对身体朝向移动（第一人称）
-        Vector3 moveDir = (transform.forward * v + transform.right * h).normalized;
+        // 以当前真正渲染画面的相机为准计算移动方向：
+        // 视角旋转后 forward/right 始终对应屏幕方向，避免出现 W 变左、A 变前之类的错乱
+        Camera viewCam = ResolveViewCamera();
+        Vector3 camForward = viewCam != null ? viewCam.transform.forward : transform.forward;
+        Vector3 camRight = viewCam != null ? viewCam.transform.right : transform.right;
+        camForward.y = 0f;
+        camRight.y = 0f;
+
+        Vector3 moveDir = (camForward.normalized * v + camRight.normalized * h).normalized;
         Vector3 velocity = moveDir * moveSpeed;
         velocity.y = rb.velocity.y;       // 保留重力
         rb.velocity = velocity;
+
+        // 调试：有输入且到节流时间时，打印驱动相机与本帧所有屏幕相机的朝向
+        if (debugLog && (Mathf.Abs(h) > 0.1f || Mathf.Abs(v) > 0.1f) && Time.time >= nextDebugTime)
+        {
+            nextDebugTime = Time.time + 0.5f;
+            string camName = viewCam != null ? viewCam.name : "(null)";
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("[PlayerMover] 输入 h=" + h.ToString("F2") + " v=" + v.ToString("F2"));
+            sb.AppendLine("  驱动相机: " + camName + "  forward=" + camForward.ToString("F3") + "  right=" + camRight.ToString("F3"));
+            sb.Append("  本帧屏幕相机(按渲染顺序): ");
+            for (int i = 0; i < screenCamerasThisFrame.Count; i++)
+            {
+                Camera c = screenCamerasThisFrame[i];
+                if (c == null) continue;
+                Vector3 f = c.transform.forward; f.y = 0f;
+                sb.Append("[" + c.name + " depth=" + c.depth + " fwd=" + f.normalized.ToString("F2") + "] ");
+            }
+            Debug.Log(sb.ToString());
+        }
+    }
+
+    /// <summary>
+    /// 取当前真正在渲染画面的相机（玩家实际看到的视角），让 WASD 永远跟随它。
+    /// 依据：本帧通过 Camera.onPostRender 捕捉到的、渲染到屏幕(targetTexture 为空)的相机。
+    /// 规则：取 depth 最大的那一层里【最后渲染】的相机——它画在最上层，就是玩家看到的画面；
+    /// 优先选透视相机，避免被正交 UI 相机带偏。
+    /// </summary>
+    private Camera ResolveViewCamera()
+    {
+        Camera assigned = (cameraTransform != null) ? cameraTransform.GetComponent<Camera>() : null;
+
+        // 1) 从本帧真正画到屏幕的相机里，找最上层那台
+        float maxDepth = float.NegativeInfinity;
+        for (int i = 0; i < screenCamerasThisFrame.Count; i++)
+        {
+            Camera c = screenCamerasThisFrame[i];
+            if (c == null || !c.isActiveAndEnabled) continue;
+            if (c.depth > maxDepth) maxDepth = c.depth;
+        }
+
+        if (maxDepth > float.NegativeInfinity)
+        {
+            // 同 depth 下，最后渲染的画在最上面 → 倒序遍历，优先取透视的（跳过正交 UI 相机）
+            Camera fallback = null;
+            for (int i = screenCamerasThisFrame.Count - 1; i >= 0; i--)
+            {
+                Camera c = screenCamerasThisFrame[i];
+                if (c == null || !c.isActiveAndEnabled) continue;
+                if (!Mathf.Approximately(c.depth, maxDepth)) continue;
+                if (!c.orthographic) return c;   // 透视相机直接用
+                if (fallback == null) fallback = c;
+            }
+            if (fallback != null) return fallback;
+        }
+
+        // 2) 兜底：还没捕捉到渲染时，用指定相机或主相机
+        if (assigned != null && assigned.isActiveAndEnabled) return assigned;
+        return Camera.main;
     }
 
     /// <summary>剧情/过场时冻结或恢复输入。</summary>
